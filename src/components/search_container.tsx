@@ -1,11 +1,13 @@
 import React, {useState} from 'react';
 import {Dropdown, DropdownProps, Container, DropdownOnSearchChangeData} from "semantic-ui-react";
+import {fetchUrl} from "../utils/dev_env";
 
 interface SearchContainerProps {
-  setSelectedArtist: (object) => void
+  setSelectedArtist: (object) => void,
+  setPlaylistUrl: (string) => void
 }
 
-const SearchContainer = ({setSelectedArtist}: SearchContainerProps) => {
+const SearchContainer = ({setSelectedArtist, setPlaylistUrl}: SearchContainerProps) => {
   const [searchOptions, setSearchOptions] = useState([]);
   const [value, setValue] = useState('');
 
@@ -19,7 +21,7 @@ const SearchContainer = ({setSelectedArtist}: SearchContainerProps) => {
         'query': data.value,
         'limit': 1, // get that artist
       });
-      fetch('/artistSearch', {
+      fetch(`${fetchUrl()}/artistSearch`, {
         method: 'post',
         headers: {'Content-Type':'application/json'},
         body: body
@@ -27,7 +29,8 @@ const SearchContainer = ({setSelectedArtist}: SearchContainerProps) => {
         .then(res => res.json())
         .then(({artists}) => {
           setSelectedArtist(artists[0]);
-          setValue(artists[0].name)
+          setValue(artists[0].name);
+          setPlaylistUrl('');
         })
     }
   };
@@ -42,7 +45,7 @@ const SearchContainer = ({setSelectedArtist}: SearchContainerProps) => {
         'query': data.searchQuery,
         'limit': 5, // amount of autocomplete results to return
       });
-      fetch('/artistSearch', {
+      fetch(`${fetchUrl()}/artistSearch`, {
         method: 'post',
         headers: {'Content-Type':'application/json'},
         body: body

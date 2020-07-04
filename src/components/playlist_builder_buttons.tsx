@@ -1,18 +1,22 @@
 import React, {useState} from 'react';
-import {Container, Dropdown, DropdownProps, Button} from "semantic-ui-react";
+import {Container, Dropdown, DropdownProps, Button, ButtonProps} from "semantic-ui-react";
 
 const playlistOptions = [
   {value: 'Setlist', text: 'Setlist'},
-  {value: 'Producer', text: 'Producer'},
-  {value: 'Songwriter', text: 'Songwriter'},
+  // {value: 'Producer', text: 'Producer'},
+  // {value: 'Songwriter', text: 'Songwriter'},
 ];
 
 interface PlaylistBuilderButtonsProps {
-  artistSelected: boolean
+  artistSelected: boolean,
+  onCreatePlaylist: (string) => (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    data: ButtonProps
+  ) => void
 }
 
-const PlaylistBuilderButtons = ({artistSelected}: PlaylistBuilderButtonsProps) => {
-  const [playlistType, setPlaylistType] = useState('');
+const PlaylistBuilderButtons = ({artistSelected, onCreatePlaylist}: PlaylistBuilderButtonsProps) => {
+  const [playlistType, setPlaylistType] = useState('Setlist');
 
   const handlePlaylistTypeSelect = (
     e: React.SyntheticEvent<HTMLElement, Event>,
@@ -23,7 +27,7 @@ const PlaylistBuilderButtons = ({artistSelected}: PlaylistBuilderButtonsProps) =
     }
   };
 
-  const canCreatePlaylist = artistSelected && !!playlistType
+  const canCreatePlaylist = artistSelected && !!playlistType;
   return (
     <Container>
       <div style={{
@@ -38,7 +42,12 @@ const PlaylistBuilderButtons = ({artistSelected}: PlaylistBuilderButtonsProps) =
           value={playlistType}
         />
         <Container>
-          <Button disabled={!canCreatePlaylist}>Create Playlist</Button>
+          <Button
+            disabled={!canCreatePlaylist}
+            onClick={onCreatePlaylist(playlistType)}
+          >
+            Create Playlist
+          </Button>
         </Container>
       </div>
     </Container>

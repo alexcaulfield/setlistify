@@ -1,5 +1,6 @@
 import React, {useEffect} from 'react';
 import LoadingPlaceholder from "./loading_placeholder";
+import {fetchUrl} from "../utils/dev_env";
 
 interface LoginHandlerProps {
   handleLogin: () => void,
@@ -22,7 +23,7 @@ const LoginHandler = ({handleLogin, setUser}: LoginHandlerProps) => {
       const body = JSON.stringify({
         'code': params.code
       });
-      fetch('/getUser', {
+      fetch(`${fetchUrl()}/getUser`, {
         method: 'post',
         headers: {'Content-Type':'application/json'},
         body: body

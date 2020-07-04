@@ -5,6 +5,7 @@ import Login from "./login";
 import LoadingPlaceholder from "./loading_placeholder";
 import LoginHandler from "./login_handler";
 import CreatePlaylistContainer from "./create_playlist_container";
+import {fetchUrl} from "../utils/dev_env";
 
 export interface ImageType {
   height: number,
@@ -39,7 +40,7 @@ const AppRouting = ({user, setUser}: AppRoutingProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/authUrl')
+    fetch(`${fetchUrl()}/authUrl`)
       .then(response => response.json())
       .then( ({authUrl}) => {
         if (authUrl) {

@@ -1,8 +1,9 @@
 import React, {useState} from 'react';
-import {Container} from "semantic-ui-react";
+import {Container, ButtonProps, Button, Icon} from "semantic-ui-react";
 import SearchContainer from "./search_container";
 import ArtistCard from "./artist_card";
 import PlaylistBuilderButtons from "./playlist_builder_buttons";
+import {fetchUrl} from "../utils/dev_env";
 
 interface CreatePlaylistContainerProps {
   user: object
@@ -23,18 +24,55 @@ const CreatePlaylistContainer = (props: CreatePlaylistContainerProps) => {
     type: '',
     uri: ''
   });
+  const [playlistUrl, setPlaylistUrl] = useState('');
+
+  const handleCreatePlaylist = (playlistType) => (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    data: ButtonProps
+  )  => {
+    const body = JSON.stringify({
+      'artistName': selectedArtist.name,
+      'artistId': selectedArtist.id,
+      'playlistType': playlistType,
+    });
+    fetch(`${fetchUrl()}/buildPlaylist`, {
+      method: 'post',
+      headers: {'Content-Type':'application/json'},
+      body: body
+    })
+      .then(res => res.json())
+      .then((data) => {
+        if (data?.playlistUrl) {
+          setPlaylistUrl(data.playlistUrl);
+        }
+      })
+  };
 
   return (
     <Container>
-      <SearchContainer setSelectedArtist={setSelectedArtist}/>
-      <PlaylistBuilderButtons artistSelected={!!selectedArtist.name}/>
+      <SearchContainer setSelectedArtist={setSelectedArtist} setPlaylistUrl={setPlaylistUrl}/>
+      <PlaylistBuilderButtons artistSelected={!!selectedArtist.name} onCreatePlaylist={handleCreatePlaylist}/>
       {selectedArtist.name && (
-        <ArtistCard
-          artistImg={selectedArtist.images[0]}
-          artistName={selectedArtist.name}
-          artistFollowers={selectedArtist.followers}
-          artistGenre={selectedArtist.genres[0]}
-        />
+        <>
+          <ArtistCard
+            artistImg={selectedArtist.images[0]}
+            artistName={selectedArtist.name}
+            artistFollowers={selectedArtist.followers}
+            artistGenre={selectedArtist.genres[0]}
+          />
+          {!!playlistUrl && (
+            <div style={{
+              marginTop: '2vh'
+            }}>
+              <a href={playlistUrl} target="_blank" rel="noopener noreferrer">
+                <Button>
+                  <Icon name='spotify' />
+                  Check out your playlist
+                </Button>
+              </a>
+            </div>
+          )}
+        </>
       )}
     </Container>
   )
