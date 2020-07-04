@@ -51,8 +51,7 @@ app = Flask(__name__)
 app.secret_key = APP_SECRET_KEY
 CORS(app)
 # Setting URLs based on environment
-SETLISTIFY_API_BASE    = 'http://localhost:5000' if IS_OFFLINE else 'https://aahxozyk09.execute-api.us-east-1.amazonaws.com/dev/'
-SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else ''
+SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else 'https://setlistify.app'
 REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
 # Setting clients based on environment variables
 sp_oauth               = oauth2.SpotifyOAuth( SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,REDIRECT_URI,scope=SCOPE,cache_path=CACHE )
