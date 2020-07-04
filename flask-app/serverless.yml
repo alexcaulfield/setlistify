@@ -20,6 +20,11 @@ provider:
   runtime: python3.7
   stage: dev
   region: us-east-1
+  environment:
+    SPOTIFY_CLIENT_ID: ${param:SPOTIFY_CLIENT_ID}
+    SPOTIFY_CLIENT_SECRET: ${param:SPOTIFY_CLIENT_SECRET}
+    SETLIST_FM_API_KEY: ${param:SETLIST_FM_API_KEY}
+    APP_SECRET_KEY: ${param:APP_SECRET_KEY}
 
 functions:
   app:

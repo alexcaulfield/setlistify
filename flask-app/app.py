@@ -12,15 +12,6 @@ from decouple import config
 from flask_cors import CORS
 
 # Helper functions
-# Allows to get secret keys from AWS
-client = boto3.client('ssm')
-def get_secret(key):
-	resp = client.get_parameter(
-		Name=key,
-		WithDecryption=True
-	)
-	return resp['Parameter']['Value']
-
 # Safely gets from nested dict
 # https://stackoverflow.com/questions/25833613/python-safe-method-to-get-value-of-nested-dictionary
 def safe_get(dct, *keys):
@@ -34,10 +25,10 @@ def safe_get(dct, *keys):
 IS_OFFLINE = os.environ.get('IS_OFFLINE')
 
 # Setting secret keys based on environment
-SPOTIFY_CLIENT_ID     = config('SPOTIFY_CLIENT_ID')     if IS_OFFLINE else get_secret('SPOTIFY_CLIENT_ID')
-SPOTIFY_CLIENT_SECRET = config('SPOTIFY_CLIENT_SECRET') if IS_OFFLINE else get_secret('SPOTIFY_CLIENT_SECRET')
-APP_SECRET_KEY        = config('APP_SECRET_KEY')        if IS_OFFLINE else get_secret('APP_SECRET_KEY')
-SETLIST_FM_API_KEY    = config('SETLIST_FM_API_KEY')    if IS_OFFLINE else get_secret('SETLIST_FM_API_KEY')
+SPOTIFY_CLIENT_ID     = config('SPOTIFY_CLIENT_ID')     if IS_OFFLINE else os.environ['SPOTIFY_CLIENT_ID']
+SPOTIFY_CLIENT_SECRET = config('SPOTIFY_CLIENT_SECRET') if IS_OFFLINE else os.environ['SPOTIFY_CLIENT_SECRET']
+APP_SECRET_KEY        = config('APP_SECRET_KEY')        if IS_OFFLINE else os.environ['APP_SECRET_KEY']
+SETLIST_FM_API_KEY    = config('SETLIST_FM_API_KEY')    if IS_OFFLINE else os.environ['SETLIST_FM_API_KEY']
 
 SPOTIFY_API_BASE = 'https://accounts.spotify.com'
 

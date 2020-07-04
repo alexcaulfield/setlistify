@@ -1,3 +1,4 @@
 export const fetchUrl = (): string => {
-  return process.env.API_URL ? process.env.API_URL : '';
+  // using prod URL
+  return 'https://aahxozyk09.execute-api.us-east-1.amazonaws.com/dev';
 };

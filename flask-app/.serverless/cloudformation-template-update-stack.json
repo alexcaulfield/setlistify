@@ -192,7 +192,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/serverless-flask/dev/1593875945405-2020-07-04T15:19:05.405Z/serverless-flask.zip"
+          "S3Key": "serverless/serverless-flask/dev/1593885841074-2020-07-04T18:04:01.074Z/serverless-flask.zip"
         },
         "FunctionName": "serverless-flask-dev-app",
         "Handler": "s_app.handler",
@@ -204,20 +204,28 @@
           ]
         },
         "Runtime": "python3.7",
-        "Timeout": 6
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "SPOTIFY_CLIENT_ID": "0b0c290b74184b09b377bd38671e88a6",
+            "SPOTIFY_CLIENT_SECRET": "3d3b6dcb6423475982994a186421af1b",
+            "SETLIST_FM_API_KEY": "mwdJY7VIR3pKw9KuPFHgLuGbnsDuumxtd4BB",
+            "APP_SECRET_KEY": "\\x0f\\xbdEZ%\\xf5\\xd9\\x18\\xb2\\xef\\x86\\xca\\xbe\\xbf\\x07\\x85jMP\\xd1]\\x88u\\x08"
+          }
+        }
       },
       "DependsOn": [
         "AppLogGroup"
       ]
     },
-    "AppLambdaVersionuweKVgZ4QlfEgtpXvyMBph7euZzciZj70jUCMGEw": {
+    "AppLambdaVersionF34NXIWddUtE62ZydDN5esgOiQ0bWafabInlWbNebEw": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "AppLambdaFunction"
         },
-        "CodeSha256": "EuvVK51qUzYwHWrLk/HL/2rHVncB+GzQyv8RB3r9OkQ="
+        "CodeSha256": "pL6e6HGsL/OXfIJKvPokgtrGPDcyinSYN0GkIE5GGIM="
       }
     },
     "ApiGatewayRestApi": {
@@ -336,7 +344,7 @@
         "MethodResponses": []
       }
     },
-    "ApiGatewayDeployment1593875928553": {
+    "ApiGatewayDeployment1593885820563": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -495,7 +503,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/serverless-flask/dev/1593875945405-2020-07-04T15:19:05.405Z/custom-resources.zip"
+          "S3Key": "serverless/serverless-flask/dev/1593885841074-2020-07-04T18:04:01.074Z/custom-resources.zip"
         },
         "FunctionName": "serverless-flask-dev-custom-resource-apigw-cw-role",
         "Handler": "apiGatewayCloudWatchRole/handler.handler",
@@ -551,7 +559,7 @@
     "AppLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "AppLambdaVersionuweKVgZ4QlfEgtpXvyMBph7euZzciZj70jUCMGEw"
+        "Ref": "AppLambdaVersionF34NXIWddUtE62ZydDN5esgOiQ0bWafabInlWbNebEw"
       }
     },
     "ServiceEndpoint": {
