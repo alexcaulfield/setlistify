@@ -42,8 +42,8 @@ const CreatePlaylistContainer = (props: CreatePlaylistContainerProps) => {
     })
       .then(res => res.json())
       .then((data) => {
-        if (data?.playlistUrl) {
-          setPlaylistUrl(data.playlistUrl);
+        if (data?.playlistUri) {
+          setPlaylistUrl(data.playlistUri);
         }
       })
   };

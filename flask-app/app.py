@@ -132,7 +132,8 @@ def build_playlist():
     playlistId = createPlaylist(userId, access_token, sp, artistName, playlistName)
     link = insertSongsIntoPlaylist(userId, list(songs), artistName, sp, playlistId)
     if link:
-        return {'playlistUrl': link}
+        uri = get_spotify_uri(playlistId)
+        return {'playlistUri': uri}
     return {}
 
 def pick_most_recent_setlist(setlists):
@@ -165,16 +166,18 @@ def insertSongsIntoPlaylist(userId, songNames, artistName, sp, playlistId):
         if trackName:
             tracks.append(sp.search(q='track:' + trackName + ' artist:' + artistName, limit=1, type='track'))
     trackIds = map(getTrackId, tracks)
-    print(trackIds)
 
     result = sp.user_playlist_add_tracks(userId, playlistId, filter(lambda track: track, trackIds))
-    print(result)
     # check if we've successfully added tracks to the playlist
     if result:
         playlistData = sp.playlist(playlistId)
         playlistUrl = safe_get(playlistData, 'external_urls', 'spotify')
         return playlistUrl
     return ''
+
+def get_spotify_uri(playlistId):
+    return f"spotify:playlist:{playlistId}"
+
 
 # This endpoint doesn't work yet
 def get_songwriter_data(songwriterId, accessToken):
