@@ -64,7 +64,7 @@ const AppRouting = ({user, setUser}: AppRoutingProps) => {
         }
       />
       <Route
-        path='/callback/:token'
+        path='/callback'
         render={() => 
           !isLoggedIn ? (
             <LoginHandler
