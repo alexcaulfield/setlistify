@@ -25,7 +25,7 @@ const LoginHandler = ({handleLogin, setUser}: LoginHandlerProps) => {
       });
       fetch(`${fetchUrl()}/getUser`, {
         method: 'post',
-        credentials: 'same-origin',
+        credentials: 'include',
         headers: {'Content-Type':'application/json'},
         body: body
       }).then(res => res.json())

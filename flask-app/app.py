@@ -40,9 +40,8 @@ CACHE = '.spotipyoauthcache'
 SHOW_DIALOG = True if IS_OFFLINE else False
 
 app = Flask(__name__)
-SECRET_KEY = APP_SECRET_KEY
+app.secret_key = APP_SECRET_KEY
 SESSION_TYPE = 'filesystem'
-app.config.from_object(__name__)
 Session(app)
 CORS(app)
 # Setting URLs based on environment
