@@ -40,10 +40,11 @@ CACHE = '.spotipyoauthcache'
 SHOW_DIALOG = True if IS_OFFLINE else False
 
 app = Flask(__name__)
-app.secret_key = APP_SECRET_KEY
-SESSION_TYPE = 'filesystem'
+app.config['SECRET_KEY'] = APP_SECRET_KEY
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
 Session(app)
-CORS(app)
+CORS(app, supports_credentials=True)
 # Setting URLs based on environment
 SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else 'https://setlistify.app'
 REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
@@ -56,7 +57,8 @@ setlistApi             = Repertorio(SETLIST_FM_API_KEY)
 # Get Spotify Auth URL
 # params: none
 # returns: string authUrl
-@app.route("/authUrl")
+@app.route("/authUrl", methods=['GET'])
+@cross_origin(['www.setlistify.app'])
 def verify():
     authUrl = f'{SPOTIFY_API_BASE}/authorize?client_id={SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope={SCOPE}&show_dialog={SHOW_DIALOG}'
     return {'authUrl': authUrl}
@@ -67,7 +69,7 @@ def verify():
 # params: string code
 # returns: dict results (representing user object from Spotify API)
 @app.route("/getUser", methods=['POST'])
-@cross_origin(supports_credentials=True)
+@cross_origin(['www.setlistify.app'])
 def get_user():
     session.clear()
     data = request.get_json()
@@ -86,13 +88,13 @@ def get_user():
 # params: string artist query, int limit
 # returns: array of artist results
 @app.route('/artistSearch', methods=['POST'])
-@cross_origin(supports_credentials=True)
+@cross_origin(['www.setlistify.app'])
 def get_artist_results():
     data = request.get_json()
     query = data.get('query')
     query_limit = data.get('limit')
 
-    access_token = session['toke']
+    access_token = session.get('toke')
     sp = spotipy.Spotify(auth=access_token)
     results = sp.search(q='artist:' + query, type='artist', limit=query_limit)
     return {'artists': results['artists']['items']}
@@ -101,14 +103,14 @@ def get_artist_results():
 # params: string playlist type, string artist name
 # returns: playlist URI
 @app.route('/buildPlaylist', methods=['POST'])
-@cross_origin(supports_credentials=True)
+@cross_origin(['www.setlistify.app'])
 def build_playlist():
     data         = request.get_json()
     artistName   = data['artistName']
     artistId     = data['artistId']
     playlistType = data['playlistType']
 
-    access_token = session['toke']
+    access_token = session.get('toke')
     sp = spotipy.Spotify(auth=access_token)
     user = sp.current_user()
 
