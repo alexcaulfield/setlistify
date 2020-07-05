@@ -9,7 +9,8 @@ from collections import OrderedDict
 import requests
 import boto3
 from decouple import config
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
+from flask_session import Session
 
 # Helper functions
 # Safely gets from nested dict
@@ -39,7 +40,10 @@ CACHE = '.spotipyoauthcache'
 SHOW_DIALOG = True if IS_OFFLINE else False
 
 app = Flask(__name__)
-app.secret_key = APP_SECRET_KEY
+SECRET_KEY = APP_SECRET_KEY
+SESSION_TYPE = 'filesystem'
+app.config.from_object(__name__)
+Session(app)
 CORS(app)
 # Setting URLs based on environment
 SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else 'https://setlistify.app'
@@ -64,6 +68,7 @@ def verify():
 # params: string code
 # returns: dict results (representing user object from Spotify API)
 @app.route("/getUser", methods=['POST'])
+@cross_origin(supports_credentials=True)
 def get_user():
     session.clear()
     data = request.get_json()
@@ -82,16 +87,13 @@ def get_user():
 # params: string artist query, int limit
 # returns: array of artist results
 @app.route('/artistSearch', methods=['POST'])
+@cross_origin(supports_credentials=True)
 def get_artist_results():
     data = request.get_json()
     query = data.get('query')
     query_limit = data.get('limit')
 
-    access_token = ''
-    if session.get('toke') is not None:
-        access_token = session['toke']
-    else:
-        return {}
+    access_token = session['toke']
     sp = spotipy.Spotify(auth=access_token)
     results = sp.search(q='artist:' + query, type='artist', limit=query_limit)
     return {'artists': results['artists']['items']}
@@ -100,17 +102,14 @@ def get_artist_results():
 # params: string playlist type, string artist name
 # returns: playlist URI
 @app.route('/buildPlaylist', methods=['POST'])
+@cross_origin(supports_credentials=True)
 def build_playlist():
     data         = request.get_json()
     artistName   = data['artistName']
     artistId     = data['artistId']
     playlistType = data['playlistType']
 
-    access_token = ''
-    if session.get('toke') is not None:
-        access_token = session['toke']
-    else:
-        return {}
+    access_token = session['toke']
     sp = spotipy.Spotify(auth=access_token)
     user = sp.current_user()
 

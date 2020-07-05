@@ -37,6 +37,7 @@ const CreatePlaylistContainer = (props: CreatePlaylistContainerProps) => {
     });
     fetch(`${fetchUrl()}/buildPlaylist`, {
       method: 'post',
+      credentials: 'same-origin',
       headers: {'Content-Type':'application/json'},
       body: body
     })

@@ -23,6 +23,7 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl}: SearchContainerPro
       });
       fetch(`${fetchUrl()}/artistSearch`, {
         method: 'post',
+        credentials: 'same-origin',
         headers: {'Content-Type':'application/json'},
         body: body
       })
@@ -47,6 +48,7 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl}: SearchContainerPro
       });
       fetch(`${fetchUrl()}/artistSearch`, {
         method: 'post',
+        credentials: 'same-origin',
         headers: {'Content-Type':'application/json'},
         body: body
       })
