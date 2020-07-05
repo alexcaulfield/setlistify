@@ -87,7 +87,11 @@ def get_artist_results():
     query = data.get('query')
     query_limit = data.get('limit')
 
-    access_token = session['toke']
+    access_token = ''
+    if session.get('toke') is not None:
+        access_token = session['toke']
+    else:
+        return {}
     sp = spotipy.Spotify(auth=access_token)
     results = sp.search(q='artist:' + query, type='artist', limit=query_limit)
     return {'artists': results['artists']['items']}
@@ -102,7 +106,11 @@ def build_playlist():
     artistId     = data['artistId']
     playlistType = data['playlistType']
 
-    access_token = session['toke']
+    access_token = ''
+    if session.get('toke') is not None:
+        access_token = session['toke']
+    else:
+        return {}
     sp = spotipy.Spotify(auth=access_token)
     user = sp.current_user()
 
