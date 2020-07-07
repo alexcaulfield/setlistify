@@ -31,6 +31,10 @@ SPOTIFY_CLIENT_SECRET = config('SPOTIFY_CLIENT_SECRET') if IS_OFFLINE else os.en
 APP_SECRET_KEY        = config('APP_SECRET_KEY')        if IS_OFFLINE else os.environ['APP_SECRET_KEY']
 SETLIST_FM_API_KEY    = config('SETLIST_FM_API_KEY')    if IS_OFFLINE else os.environ['SETLIST_FM_API_KEY']
 
+# Setting URLs based on environment
+SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else 'https://setlistify.app'
+REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
+
 SPOTIFY_API_BASE = 'https://accounts.spotify.com'
 
 SCOPE = 'playlist-modify-public'
@@ -42,15 +46,11 @@ SHOW_DIALOG = True if IS_OFFLINE else False
 app = Flask(__name__)
 app.config['SECRET_KEY'] = APP_SECRET_KEY
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_PERMANENT'] = False
 Session(app)
 CORS(app, supports_credentials=True)
-# Setting URLs based on environment
-SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else 'https://setlistify.app'
-REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
-# Setting clients based on environment variables
-sp_oauth               = oauth2.SpotifyOAuth( SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,REDIRECT_URI,scope=SCOPE,cache_path=CACHE )
 setlistApi             = Repertorio(SETLIST_FM_API_KEY)
+auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,REDIRECT_URI,cache_path=CACHE)
+spotify = spotipy.Spotify(auth_manager=auth_manager)
 
 # Begin API Endpoints
 
@@ -60,8 +60,14 @@ setlistApi             = Repertorio(SETLIST_FM_API_KEY)
 @app.route("/authUrl", methods=['GET'])
 @cross_origin(['www.setlistify.app'])
 def verify():
-    authUrl = f'{SPOTIFY_API_BASE}/authorize?client_id={SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope={SCOPE}&show_dialog={SHOW_DIALOG}'
+    authUrl = auth_manager.get_authorize_url()
     return {'authUrl': authUrl}
+
+@app.route('/logout', methods=['POST'])
+@cross_origin(['www.setlistify.app'])
+def logout():
+    session.clear()
+    return {'display_name': '', 'id': ''}
 
 # authorization-code-flow Step 2.
 # Have your application request refresh and access tokens;
@@ -71,16 +77,11 @@ def verify():
 @app.route("/getUser", methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_user():
-    session.clear()
     data = request.get_json()
     code = data.get('code')
 
-    token_info = sp_oauth.get_access_token(code)
-    access_token = token_info.get('access_token')
-
-    session["toke"] = access_token
-    sp = spotipy.Spotify(auth=access_token)
-    results = sp.current_user()
+    session['token_info'] = auth_manager.get_access_token(code)
+    results = spotify.current_user()
 
     return results
 
@@ -94,9 +95,7 @@ def get_artist_results():
     query = data.get('query')
     query_limit = data.get('limit')
 
-    access_token = session.get('toke')
-    sp = spotipy.Spotify(auth=access_token)
-    results = sp.search(q='artist:' + query, type='artist', limit=query_limit)
+    results = spotify.search(q='artist:' + query, type='artist', limit=query_limit)
     return {'artists': results['artists']['items']}
 
 # Build a playlist
@@ -110,9 +109,7 @@ def build_playlist():
     artistId     = data['artistId']
     playlistType = data['playlistType']
 
-    access_token = session.get('toke')
-    sp = spotipy.Spotify(auth=access_token)
-    user = sp.current_user()
+    user = spotify.current_user()
 
     songs = []
     if playlistType == 'Setlist':
@@ -128,8 +125,8 @@ def build_playlist():
         get_songwriter_data(artistId, access_token)
 
     userId = user.get('id')
-    playlistId = createPlaylist(userId, access_token, sp, artistName, playlistName)
-    link = insertSongsIntoPlaylist(userId, list(songs), artistName, sp, playlistId)
+    playlistId = createPlaylist(userId, spotify, artistName, playlistName)
+    link = insertSongsIntoPlaylist(userId, list(songs), artistName, spotify, playlistId)
     if link:
         uri = get_spotify_uri(playlistId)
         return {'playlistUri': uri}
@@ -143,7 +140,7 @@ def pick_most_recent_setlist(setlists):
             return songList.get('song')
     return {}
 
-def createPlaylist(userId, userToken, sp, artistName, playlistName):
+def createPlaylist(userId, sp, artistName, playlistName):
     # create playlist on their account
     description = 'A playlist made with the setlistify.app'
     result = sp.user_playlist_create(userId, playlistName, public=True, description=description)

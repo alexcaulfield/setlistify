@@ -1,4 +1,3 @@
 export const fetchUrl = (): string => {
-  // using prod URL
-  return 'https://aahxozyk09.execute-api.us-east-1.amazonaws.com/dev';
+  return process.env.REACT_APP_ENV === 'dev' ? '' : 'https://aahxozyk09.execute-api.us-east-1.amazonaws.com/dev';
 };

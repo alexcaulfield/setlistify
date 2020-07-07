@@ -192,7 +192,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/serverless-flask/dev/1593915946724-2020-07-05T02:25:46.724Z/serverless-flask.zip"
+          "S3Key": "serverless/serverless-flask/dev/1593916073367-2020-07-05T02:27:53.367Z/serverless-flask.zip"
         },
         "FunctionName": "serverless-flask-dev-app",
         "Handler": "s_app.handler",
@@ -218,14 +218,14 @@
         "AppLogGroup"
       ]
     },
-    "AppLambdaVersionBRWLJJI3kbldaeTnqMG4L9qWSdhIWMDhd3r0OpLoY8": {
+    "AppLambdaVersionm9rLNnHLjYkpNBnXKE1aKRSmyXRlJWi6q2RmMs78Q": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "AppLambdaFunction"
         },
-        "CodeSha256": "8StIiDYSkWijjnMYqR+emBlCwFYJ+4VOp532z3rErPg="
+        "CodeSha256": "P+/1T9Tqx2vuCL5sBLLgpQaCNJeOcF+9WT1NyX9r+Ok="
       }
     },
     "ApiGatewayRestApi": {
@@ -344,7 +344,7 @@
         "MethodResponses": []
       }
     },
-    "ApiGatewayDeployment1593915927818": {
+    "ApiGatewayDeployment1593916054905": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -503,7 +503,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/serverless-flask/dev/1593915946724-2020-07-05T02:25:46.724Z/custom-resources.zip"
+          "S3Key": "serverless/serverless-flask/dev/1593916073367-2020-07-05T02:27:53.367Z/custom-resources.zip"
         },
         "FunctionName": "serverless-flask-dev-custom-resource-apigw-cw-role",
         "Handler": "apiGatewayCloudWatchRole/handler.handler",
@@ -559,7 +559,7 @@
     "AppLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "AppLambdaVersionBRWLJJI3kbldaeTnqMG4L9qWSdhIWMDhd3r0OpLoY8"
+        "Ref": "AppLambdaVersionm9rLNnHLjYkpNBnXKE1aKRSmyXRlJWi6q2RmMs78Q"
       }
     },
     "ServiceEndpoint": {

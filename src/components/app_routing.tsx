@@ -13,7 +13,7 @@ export interface ImageType {
   url: string,
 }
 
-interface UserType {
+export interface UserType {
   display_name: string,
   external_urls: {
     spotify: string
@@ -32,10 +32,11 @@ interface UserType {
 interface AppRoutingProps {
   user: UserType | {},
   setUser: (UserType) => void,
+  isLoggedIn: boolean,
+  setIsLoggedIn: (boolean) => void,
 }
 
-const AppRouting = ({user, setUser}: AppRoutingProps) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps) => {
   const [authUrl, setAuthUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -76,9 +77,17 @@ const AppRouting = ({user, setUser}: AppRoutingProps) => {
           )
         }
       />
-      <Route exact path='/createPlaylist'>
-        <CreatePlaylistContainer user={user}/>
-      </Route>
+      <Route
+        exact
+        path='/createPlaylist'
+        render={() =>
+          isLoggedIn ? (
+            <CreatePlaylistContainer user={user}/>
+          ) : (
+            <Redirect to='/'/>
+          )
+        }
+      />
       <Route component={NotFound}/>
     </Switch>
   )
