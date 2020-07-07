@@ -43,7 +43,7 @@ const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps)
   useEffect(() => {
     fetch(`${fetchUrl()}/authUrl`)
       .then(response => response.json())
-      .then( ({authUrl}) => {
+      .then(({authUrl}) => {
         if (authUrl) {
           setAuthUrl(authUrl);
           setIsLoading(false);

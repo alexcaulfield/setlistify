@@ -14,7 +14,7 @@ const HeaderCard = ({name, setUser, setIsLoggedIn}: HeaderProps) => {
 
   const handleLogout = () => {
     fetch(`${fetchUrl()}/logout`, {
-      method: 'post',
+      method: 'get',
       credentials: 'include',
     })
       .then(res => res.json())

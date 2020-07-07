@@ -44,6 +44,7 @@ CACHE = '.spotipyoauthcache'
 SHOW_DIALOG = True if IS_OFFLINE else False
 
 app = Flask(__name__)
+app.debug = True
 app.config['SECRET_KEY'] = APP_SECRET_KEY
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
@@ -57,13 +58,13 @@ spotify = spotipy.Spotify(auth_manager=auth_manager)
 # Get Spotify Auth URL
 # params: none
 # returns: string authUrl
-@app.route("/authUrl", methods=['GET'])
+@app.route("/authUrl")
 @cross_origin(['www.setlistify.app'])
 def verify():
     authUrl = auth_manager.get_authorize_url()
     return {'authUrl': authUrl}
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout')
 @cross_origin(['www.setlistify.app'])
 def logout():
     session.clear()
@@ -77,8 +78,7 @@ def logout():
 @app.route("/getUser", methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_user():
-    data = request.get_json()
-    code = data.get('code')
+    code = request.form.get('code')
 
     session['token_info'] = auth_manager.get_access_token(code)
     results = spotify.current_user()
@@ -91,8 +91,8 @@ def get_user():
 @app.route('/artistSearch', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_artist_results():
-    data = request.get_json()
-    query = data.get('query')
+    data        = request.get_json(force = True)
+    query       = data.get('query')
     query_limit = data.get('limit')
 
     results = spotify.search(q='artist:' + query, type='artist', limit=query_limit)
@@ -104,10 +104,10 @@ def get_artist_results():
 @app.route('/buildPlaylist', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def build_playlist():
-    data         = request.get_json()
-    artistName   = data['artistName']
-    artistId     = data['artistId']
-    playlistType = data['playlistType']
+    data         = request.get_json(force = True)
+    artistName   = data.get('artistName')
+    artistId     = data.get('artistId')
+    playlistType = data.get('playlistType')
 
     user = spotify.current_user()
 
