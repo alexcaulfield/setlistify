@@ -1,5 +1,5 @@
 import os
-from flask import Flask, redirect, url_for, session, request
+from flask import Flask, redirect, url_for, session, request, jsonify
 from dotenv import load_dotenv
 import spotipy
 import spotipy.util as util
@@ -50,7 +50,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 CORS(app, supports_credentials=True)
 setlistApi             = Repertorio(SETLIST_FM_API_KEY)
-auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,REDIRECT_URI,cache_path=CACHE)
+auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=CACHE)
 spotify = spotipy.Spotify(auth_manager=auth_manager)
 
 # Begin API Endpoints
@@ -62,13 +62,13 @@ spotify = spotipy.Spotify(auth_manager=auth_manager)
 @cross_origin(['www.setlistify.app'])
 def verify():
     authUrl = auth_manager.get_authorize_url()
-    return {'authUrl': authUrl}
+    return jsonify({'authUrl': authUrl})
 
 @app.route('/logout')
 @cross_origin(['www.setlistify.app'])
 def logout():
     session.clear()
-    return {'display_name': '', 'id': ''}
+    return jsonify({'display_name': '', 'id': ''})
 
 # authorization-code-flow Step 2.
 # Have your application request refresh and access tokens;
@@ -78,12 +78,13 @@ def logout():
 @app.route("/getUser", methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_user():
-    code = request.form.get('code')
+    session.clear()
+    code = request.json.get('code')
 
     session['token_info'] = auth_manager.get_access_token(code)
     results = spotify.current_user()
 
-    return results
+    return jsonify(results)
 
 # get results for search query from Spotify API
 # params: string artist query, int limit
@@ -91,12 +92,11 @@ def get_user():
 @app.route('/artistSearch', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_artist_results():
-    data        = request.get_json(force = True)
-    query       = data.get('query')
-    query_limit = data.get('limit')
+    query       = request.json.get('query')
+    query_limit = request.json.get('limit')
 
     results = spotify.search(q='artist:' + query, type='artist', limit=query_limit)
-    return {'artists': results['artists']['items']}
+    return jsonify({'artists': results['artists']['items']})
 
 # Build a playlist
 # params: string playlist type, string artist name
@@ -104,10 +104,9 @@ def get_artist_results():
 @app.route('/buildPlaylist', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def build_playlist():
-    data         = request.get_json(force = True)
-    artistName   = data.get('artistName')
-    artistId     = data.get('artistId')
-    playlistType = data.get('playlistType')
+    artistName   = request.json.get('artistName')
+    artistId     = request.json.get('artistId')
+    playlistType = request.json.get('playlistType')
 
     user = spotify.current_user()
 
@@ -129,8 +128,8 @@ def build_playlist():
     link = insertSongsIntoPlaylist(userId, list(songs), artistName, spotify, playlistId)
     if link:
         uri = get_spotify_uri(playlistId)
-        return {'playlistUri': uri}
-    return {}
+        return jsonify({'playlistUri': uri})
+    return jsonify({})
 
 def pick_most_recent_setlist(setlists):
     for setlistObject in setlists:

@@ -212,7 +212,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/serverless-flask/dev/1594089429681-2020-07-07T02:37:09.681Z/serverless-flask.zip"
+                "S3Key": "serverless/serverless-flask/dev/1594173032188-2020-07-08T01:50:32.188Z/serverless-flask.zip"
               },
               "FunctionName": "serverless-flask-dev-app",
               "Handler": "s_app.handler",
@@ -238,14 +238,14 @@
               "AppLogGroup"
             ]
           },
-          "AppLambdaVersionuf5jEms29n6GaG0UBwKtXdg7bMvZ45oWxQQvKgmDAY": {
+          "AppLambdaVersionOX8qMRwa7tJ7g528NYpWZ4EDRFhdHhInRt9LHxmx0OM": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "AppLambdaFunction"
               },
-              "CodeSha256": "XsOANU4mZCoUdFIP+QcLv98aN2DIAYV/ZVwoAJWk6PQ="
+              "CodeSha256": "vuJ2ZX3PLVx1anEFBQuJysY2HZCtGW838UIy7BxYDL0="
             }
           },
           "ApiGatewayRestApi": {
@@ -364,7 +364,7 @@
               "MethodResponses": []
             }
           },
-          "ApiGatewayDeployment1594089410242": {
+          "ApiGatewayDeployment1594173015413": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -523,7 +523,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/serverless-flask/dev/1594089429681-2020-07-07T02:37:09.681Z/custom-resources.zip"
+                "S3Key": "serverless/serverless-flask/dev/1594173032188-2020-07-08T01:50:32.188Z/custom-resources.zip"
               },
               "FunctionName": "serverless-flask-dev-custom-resource-apigw-cw-role",
               "Handler": "apiGatewayCloudWatchRole/handler.handler",
@@ -579,7 +579,7 @@
           "AppLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "AppLambdaVersionuf5jEms29n6GaG0UBwKtXdg7bMvZ45oWxQQvKgmDAY"
+              "Ref": "AppLambdaVersionOX8qMRwa7tJ7g528NYpWZ4EDRFhdHhInRt9LHxmx0OM"
             }
           },
           "ServiceEndpoint": {
@@ -713,7 +713,7 @@
         "timeout": 6,
         "runtime": "python3.7",
         "vpc": {},
-        "versionLogicalId": "AppLambdaVersionuf5jEms29n6GaG0UBwKtXdg7bMvZ45oWxQQvKgmDAY"
+        "versionLogicalId": "AppLambdaVersionOX8qMRwa7tJ7g528NYpWZ4EDRFhdHhInRt9LHxmx0OM"
       }
     },
     "serviceFilename": "serverless.yml",
@@ -727,7 +727,7 @@
     "artifact": "/Users/alexcaulfield/Documents/develop/setlistify-ts/setlistify-app/flask-app/.serverless/serverless-flask.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/serverless-flask/dev/1594089429681-2020-07-07T02:37:09.681Z",
+    "artifactDirectoryName": "serverless/serverless-flask/dev/1594173032188-2020-07-08T01:50:32.188Z",
     "artifact": "serverless-flask.zip"
   }
 }
