@@ -20,11 +20,12 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 
 ### Current Features
 * Autocomplete for artists
-* Create Playlists based on an artist's previous concert setlist, 
-songs they've written, or songs they've produced right on your Spotify account!
+* Create Playlists based on an artist's previous concert setlist right on your Spotify account!
 
 ### Future Features
 * View upcoming shows in your area for that artist
+* songs they've written, or songs they've produced
+* Playlists from TV and Movies
 
 ### Resources
 https://www.serverless.com/blog/flask-python-rest-api-serverless-lambda-dynamodb 
