@@ -1,5 +1,5 @@
 # Setlistify
-Not live at setlistify.app!
+Live at setlistify.app!
 
 A platform for you to prep for concerts - find an artist you're seeing soon, and add their most recently played songs live to a Spotify playlist
 
