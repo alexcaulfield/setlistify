@@ -15,6 +15,8 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 * Spotipy - Spotify Python Wrapper
 * Setlist FM API
 * Repertorio - Setlist.fm Python Wrapper
+* Serverless
+* AWS Lambda
 
 ### Current Features
 * Autocomplete for artists
