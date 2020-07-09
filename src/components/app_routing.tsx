@@ -39,6 +39,7 @@ interface AppRoutingProps {
 const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps) => {
   const [authUrl, setAuthUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState('');
 
   useEffect(() => {
     fetch(`${fetchUrl()}/authUrl`)
@@ -71,6 +72,7 @@ const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps)
             <LoginHandler
               handleLogin={() => setIsLoggedIn(true)}
               setUser={setUser}
+              setToken={setToken}
             />
           ) : (
             <Redirect to='/createPlaylist' />
@@ -82,7 +84,7 @@ const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps)
         path='/createPlaylist'
         render={() =>
           isLoggedIn ? (
-            <CreatePlaylistContainer user={user}/>
+            <CreatePlaylistContainer token={token}/>
           ) : (
             <Redirect to='/'/>
           )

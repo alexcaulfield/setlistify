@@ -6,10 +6,10 @@ import PlaylistBuilderButtons from "./playlist_builder_buttons";
 import {fetchUrl} from "../utils/dev_env";
 
 interface CreatePlaylistContainerProps {
-  user: object
+  token: string,
 }
 
-const CreatePlaylistContainer = (props: CreatePlaylistContainerProps) => {
+const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
   const [selectedArtist, setSelectedArtist] = useState({
     external_urls: {},
     followers: {
@@ -34,6 +34,7 @@ const CreatePlaylistContainer = (props: CreatePlaylistContainerProps) => {
       'artistName': selectedArtist.name,
       'artistId': selectedArtist.id,
       'playlistType': playlistType,
+      'token': token,
     });
     fetch(`${fetchUrl()}/buildPlaylist`, {
       method: 'post',
@@ -51,7 +52,7 @@ const CreatePlaylistContainer = (props: CreatePlaylistContainerProps) => {
 
   return (
     <Container>
-      <SearchContainer setSelectedArtist={setSelectedArtist} setPlaylistUrl={setPlaylistUrl}/>
+      <SearchContainer setSelectedArtist={setSelectedArtist} setPlaylistUrl={setPlaylistUrl} token={token}/>
       <PlaylistBuilderButtons artistSelected={!!selectedArtist.name} onCreatePlaylist={handleCreatePlaylist}/>
       {selectedArtist.name && (
         <>

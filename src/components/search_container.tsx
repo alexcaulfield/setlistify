@@ -4,10 +4,11 @@ import {fetchUrl} from "../utils/dev_env";
 
 interface SearchContainerProps {
   setSelectedArtist: (object) => void,
-  setPlaylistUrl: (string) => void
+  setPlaylistUrl: (string) => void,
+  token: string,
 }
 
-const SearchContainer = ({setSelectedArtist, setPlaylistUrl}: SearchContainerProps) => {
+const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token}: SearchContainerProps) => {
   const [searchOptions, setSearchOptions] = useState([]);
   const [value, setValue] = useState('');
 
@@ -20,6 +21,7 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl}: SearchContainerPro
       const body = JSON.stringify({
         'query': data.value,
         'limit': 1, // get that artist
+        'token': token,
       });
       fetch(`${fetchUrl()}/artistSearch`, {
         method: 'post',
@@ -45,6 +47,7 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl}: SearchContainerPro
       const body = JSON.stringify({
         'query': data.searchQuery,
         'limit': 5, // amount of autocomplete results to return
+        'token': token,
       });
       fetch(`${fetchUrl()}/artistSearch`, {
         method: 'post',
