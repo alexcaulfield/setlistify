@@ -1,6 +1,8 @@
 # Setlistify
 Live at setlistify.app!
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/1ddc4b4f-68b8-410b-93a8-5f10c7fece4c/deploy-status)](https://app.netlify.com/sites/sleepy-roentgen-4c791e/deploys)
+
 A platform for you to prep for concerts - find an artist you're seeing soon, and add their most recently played songs live to a Spotify playlist
 
 ### Technologies used
