@@ -13,6 +13,7 @@ from flask_cors import CORS, cross_origin
 from flask_session import Session
 import jwt
 import base64
+import uuid
 
 # Helper functions
 # Safely gets from nested dict
@@ -40,7 +41,6 @@ REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
 SPOTIFY_API_BASE = 'https://accounts.spotify.com'
 
 SCOPE = 'playlist-modify-public'
-CACHE = '.spotipyoauthcache'
 
 # Set this to True for testing but you probably want it set to False in production.
 SHOW_DIALOG = True # if IS_OFFLINE else False
@@ -51,8 +51,7 @@ app.config['SECRET_KEY'] = APP_SECRET_KEY
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 CORS(app, supports_credentials=True)
-setlistApi             = Repertorio(SETLIST_FM_API_KEY)
-auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=CACHE)
+setlistApi = Repertorio(SETLIST_FM_API_KEY)
 
 # Begin API Endpoints
 
@@ -62,8 +61,13 @@ auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SEC
 @app.route("/authUrl")
 @cross_origin(['www.setlistify.app'])
 def verify():
+    cache_path=f'.cache/.spotipyoauthcache{uuid.uuid4()}'
+    auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=cache_path)
     authUrl = auth_manager.get_authorize_url()
-    return jsonify({'authUrl': authUrl})
+    return jsonify({
+        'authUrl': authUrl,
+        'cachePath':cache_path
+    })
 
 # authorization-code-flow Step 2.
 # Have your application request refresh and access tokens;
@@ -73,8 +77,12 @@ def verify():
 @app.route("/getUser", methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_user():
+    session.clear()
     code = request.json.get('code')
+    cache_path = request.json.get('cache_path')
+    print(cache_path)
 
+    auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=cache_path)
     access_token = auth_manager.get_access_token(code)
     encoded_access_token = jwt.encode(access_token, APP_SECRET_KEY, algorithm='HS256')
 

@@ -6,6 +6,7 @@ interface LoginHandlerProps {
   handleLogin: () => void,
   setUser: (object) => void,
   setToken: (string) => void,
+  cachePath: string,
 }
 
 const getUrlParams = () => {
@@ -17,12 +18,13 @@ const getUrlParams = () => {
   return vars;
 };
 
-const LoginHandler = ({handleLogin, setUser, setToken}: LoginHandlerProps) => {
+const LoginHandler = ({handleLogin, setUser, setToken, cachePath}: LoginHandlerProps) => {
   useEffect(() => {
     const params = getUrlParams();
     if (params?.code) {
       const body = JSON.stringify({
-        code: params.code
+        code: params.code,
+        cache_path: cachePath,
       });
       fetch(`${fetchUrl()}/getUser`, {
         method: 'POST',
@@ -35,7 +37,7 @@ const LoginHandler = ({handleLogin, setUser, setToken}: LoginHandlerProps) => {
           handleLogin();
         });
     }
-  }, []);
+  }, [cachePath]);
 
   return (
     <>

@@ -40,13 +40,15 @@ const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps)
   const [authUrl, setAuthUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState('');
+  const [cachePath, setCachePath] = useState('');
 
   useEffect(() => {
     fetch(`${fetchUrl()}/authUrl`)
       .then(response => response.json())
-      .then(({authUrl}) => {
+      .then(({authUrl, cachePath}) => {
         if (authUrl) {
           setAuthUrl(authUrl);
+          setCachePath(cachePath);
           setIsLoading(false);
         }
       })
@@ -73,6 +75,7 @@ const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps)
               handleLogin={() => setIsLoggedIn(true)}
               setUser={setUser}
               setToken={setToken}
+              cachePath={cachePath}
             />
           ) : (
             <Redirect to='/createPlaylist' />
