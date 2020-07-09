@@ -5,6 +5,7 @@ import {fetchUrl} from "../utils/dev_env";
 interface LoginHandlerProps {
   handleLogin: () => void,
   setUser: (object) => void,
+  setToken: (string) => void,
 }
 
 const getUrlParams = () => {
@@ -16,7 +17,7 @@ const getUrlParams = () => {
   return vars;
 };
 
-const LoginHandler = ({handleLogin, setUser}: LoginHandlerProps) => {
+const LoginHandler = ({handleLogin, setUser, setToken}: LoginHandlerProps) => {
   useEffect(() => {
     const params = getUrlParams();
     if (params?.code) {
@@ -29,8 +30,9 @@ const LoginHandler = ({handleLogin, setUser}: LoginHandlerProps) => {
         headers: {'Content-Type':'application/json'},
         body: body
       }).then(res => res.json())
-        .then(data => {
-          setUser(data);
+        .then(({user, token}) => {
+          setToken(token);
+          setUser(user);
           handleLogin();
         });
     }

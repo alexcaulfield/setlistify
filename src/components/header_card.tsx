@@ -31,7 +31,7 @@ const HeaderCard = ({name, setUser, setIsLoggedIn}: HeaderProps) => {
           {!!name ? (
             <>
               <Card.Header>{name}</Card.Header>
-              <Button circular icon='log out' onClick={handleLogout} />
+              {/*<Button circular icon='log out' onClick={handleLogout} />*/}
             </>
           ) : (
             <Icon name='music' size='big' />

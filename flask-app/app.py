@@ -1,5 +1,5 @@
 import os
-from flask import Flask, redirect, url_for, session, request, jsonify
+from flask import Flask, redirect, url_for, session, request, jsonify, Response, json
 from dotenv import load_dotenv
 import spotipy
 import spotipy.util as util
@@ -11,6 +11,8 @@ import boto3
 from decouple import config
 from flask_cors import CORS, cross_origin
 from flask_session import Session
+import jwt
+import base64
 
 # Helper functions
 # Safely gets from nested dict
@@ -41,7 +43,7 @@ SCOPE = 'playlist-modify-public'
 CACHE = '.spotipyoauthcache'
 
 # Set this to True for testing but you probably want it set to False in production.
-SHOW_DIALOG = True if IS_OFFLINE else False
+SHOW_DIALOG = True # if IS_OFFLINE else False
 
 app = Flask(__name__)
 app.debug = True
@@ -51,7 +53,6 @@ Session(app)
 CORS(app, supports_credentials=True)
 setlistApi             = Repertorio(SETLIST_FM_API_KEY)
 auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=CACHE)
-spotify = spotipy.Spotify(auth_manager=auth_manager)
 
 # Begin API Endpoints
 
@@ -64,12 +65,6 @@ def verify():
     authUrl = auth_manager.get_authorize_url()
     return jsonify({'authUrl': authUrl})
 
-@app.route('/logout')
-@cross_origin(['www.setlistify.app'])
-def logout():
-    session.clear()
-    return jsonify({'display_name': '', 'id': ''})
-
 # authorization-code-flow Step 2.
 # Have your application request refresh and access tokens;
 # Spotify returns access and refresh tokens
@@ -78,13 +73,18 @@ def logout():
 @app.route("/getUser", methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_user():
-    session.clear()
     code = request.json.get('code')
 
-    session['token_info'] = auth_manager.get_access_token(code)
-    results = spotify.current_user()
+    access_token = auth_manager.get_access_token(code)
+    encoded_access_token = jwt.encode(access_token, APP_SECRET_KEY, algorithm='HS256')
 
-    return jsonify(results)
+    spotify = spotipy.Spotify(auth=access_token.get('access_token'))
+    data = spotify.current_user()
+
+    return jsonify({
+        'user': data,
+        'token': encoded_access_token.decode()
+    })
 
 # get results for search query from Spotify API
 # params: string artist query, int limit
@@ -92,8 +92,14 @@ def get_user():
 @app.route('/artistSearch', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_artist_results():
-    query       = request.json.get('query')
-    query_limit = request.json.get('limit')
+    token        = request.json.get('token')
+    token_object = jwt.decode(token, APP_SECRET_KEY, algorithm='HS256')
+    access_token = token_object.get('access_token')
+
+    query        = request.json.get('query')
+    query_limit  = request.json.get('limit')
+
+    spotify = spotipy.Spotify(auth=access_token)
 
     results = spotify.search(q='artist:' + query, type='artist', limit=query_limit)
     return jsonify({'artists': results['artists']['items']})
@@ -104,10 +110,15 @@ def get_artist_results():
 @app.route('/buildPlaylist', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def build_playlist():
+    token        = request.json.get('token')
+    token_object = jwt.decode(token, APP_SECRET_KEY, algorithm='HS256')
+    access_token = token_object.get('access_token')
+
     artistName   = request.json.get('artistName')
     artistId     = request.json.get('artistId')
     playlistType = request.json.get('playlistType')
 
+    spotify = spotipy.Spotify(auth=access_token)
     user = spotify.current_user()
 
     songs = []
