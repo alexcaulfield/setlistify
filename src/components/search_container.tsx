@@ -19,13 +19,12 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token}: SearchConta
   ): void => {
     if (data?.value) {
       const body = JSON.stringify({
-        'query': data.value,
-        'limit': 1, // get that artist
-        'token': token,
+        query: data.value,
+        limit: 1, // get that artist
+        token: token,
       });
       fetch(`${fetchUrl()}/artistSearch`, {
-        method: 'post',
-        credentials: 'include',
+        method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: body
       })
@@ -45,13 +44,12 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token}: SearchConta
   ): void => {
     if (data?.searchQuery) {
       const body = JSON.stringify({
-        'query': data.searchQuery,
-        'limit': 5, // amount of autocomplete results to return
-        'token': token,
+        query: data.searchQuery,
+        limit: 5, // amount of autocomplete results to return
+        token: token,
       });
       fetch(`${fetchUrl()}/artistSearch`, {
-        method: 'post',
-        credentials: 'include',
+        method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: body
       })

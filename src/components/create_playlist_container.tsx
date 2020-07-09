@@ -31,14 +31,13 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
     data: ButtonProps
   )  => {
     const body = JSON.stringify({
-      'artistName': selectedArtist.name,
-      'artistId': selectedArtist.id,
-      'playlistType': playlistType,
-      'token': token,
+      artistName: selectedArtist.name,
+      artistId: selectedArtist.id,
+      playlistType: playlistType,
+      token: token,
     });
     fetch(`${fetchUrl()}/buildPlaylist`, {
-      method: 'post',
-      credentials: 'include',
+      method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: body
     })

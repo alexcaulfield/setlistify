@@ -22,11 +22,10 @@ const LoginHandler = ({handleLogin, setUser, setToken}: LoginHandlerProps) => {
     const params = getUrlParams();
     if (params?.code) {
       const body = JSON.stringify({
-        'code': params.code
+        code: params.code
       });
       fetch(`${fetchUrl()}/getUser`, {
-        method: 'post',
-        credentials: 'include',
+        method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: body
       }).then(res => res.json())
