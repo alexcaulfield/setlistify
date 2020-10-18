@@ -144,9 +144,9 @@ def build_playlist():
     songs = []
     if playlistType == 'Setlist':
         artistSetlists = setlistApi.setlists(artistName=artistName)
-        setlist = pick_setlist_by_id(artistSetlists['setlist'], playlistId)
-        songs = list(map(lambda song: song.get('name'), setlist))
-        playlistName = "%s's Setlist" % (artistName)
+        setlistData = pick_setlist_by_id(artistSetlists['setlist'], playlistId)
+        songs = list(map(lambda song: song.get('name'), setlistData.get('songs')))
+        playlistName = "{}'s Setlist from {}".format(artistName, setlistData.get('date'))
     elif playlistType == 'Producer':
         print('producer')
         get_producer_data(artistId, access_token)
@@ -162,13 +162,17 @@ def build_playlist():
         return jsonify({'playlistUri': uri})
     return jsonify({})
 
+# return the item from the object from the given setlist
 def pick_setlist_by_id(setlists, id):
     for setlistObject in setlists:
         if setlistObject.get('id') == id:
             setlist = safe_get(setlistObject, 'sets', 'set')
             if setlist:
                 songList = setlist[0]
-                return songList.get('song')
+                setlistData = dict()
+                setlistData['songs'] = songList.get('song')
+                setlistData['date'] = setlistObject.get('eventDate')
+                return setlistData
     return {}
 
 def pick_most_recent_setlist(setlists):
