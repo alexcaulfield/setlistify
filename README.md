@@ -21,6 +21,7 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 ### Current Features
 * Autocomplete for artists
 * Create Playlists based on an artist's previous concert setlist right on your Spotify account!
+* Select artist playlist based on location, date, and concert length
 
 ### Future Features
 * View upcoming shows in your area for that artist
