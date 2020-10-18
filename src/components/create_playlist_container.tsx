@@ -25,6 +25,8 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
     uri: ''
   });
   const [playlistUrl, setPlaylistUrl] = useState('');
+  // set concert to Setlistify
+  const [concertId, setConcertId] = useState('');
 
   const handleCreatePlaylist = (playlistType) => (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -35,6 +37,7 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
       artistId: selectedArtist.id,
       playlistType: playlistType,
       token: token,
+      playlistId: concertId,
     });
     fetch(`${fetchUrl()}/buildPlaylist`, {
       method: 'POST',
@@ -51,8 +54,16 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
 
   return (
     <Container>
-      <SearchContainer setSelectedArtist={setSelectedArtist} setPlaylistUrl={setPlaylistUrl} token={token}/>
-      <PlaylistBuilderButtons artistSelected={!!selectedArtist.name} onCreatePlaylist={handleCreatePlaylist}/>
+      <SearchContainer
+        setSelectedArtist={setSelectedArtist}
+        setPlaylistUrl={setPlaylistUrl}
+        token={token}
+        setConcertId={setConcertId}
+      />
+      <PlaylistBuilderButtons
+        artistSelected={!!selectedArtist.name && !!concertId}
+        onCreatePlaylist={handleCreatePlaylist}
+      />
       {selectedArtist.name && (
         <>
           <ArtistCard

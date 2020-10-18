@@ -112,6 +112,17 @@ def get_artist_results():
     results = spotify.search(q='artist:' + query, type='artist', limit=query_limit)
     return jsonify({'artists': results['artists']['items']})
 
+# get artist setlists
+# params: artist name
+# returns: array of setlists
+@app.route('/artistSetlists', methods=['POST'])
+@cross_origin(['www.setlistify.app'])
+def get_artist_setlists():
+    artistName = request.json.get('artistName')
+    artistSetlistsData = setlistApi.setlists(artistName=artistName)
+    setlists = artistSetlistsData.get('setlist')
+    return jsonify({'artistSetlists': setlists})
+
 # Build a playlist
 # params: string playlist type, string artist name
 # returns: playlist URI
@@ -125,6 +136,7 @@ def build_playlist():
     artistName   = request.json.get('artistName')
     artistId     = request.json.get('artistId')
     playlistType = request.json.get('playlistType')
+    playlistId   = request.json.get('playlistId')
 
     spotify = spotipy.Spotify(auth=access_token)
     user = spotify.current_user()
@@ -132,7 +144,7 @@ def build_playlist():
     songs = []
     if playlistType == 'Setlist':
         artistSetlists = setlistApi.setlists(artistName=artistName)
-        setlist = pick_most_recent_setlist(artistSetlists['setlist'])
+        setlist = pick_setlist_by_id(artistSetlists['setlist'], playlistId)
         songs = list(map(lambda song: song.get('name'), setlist))
         playlistName = "%s's Setlist" % (artistName)
     elif playlistType == 'Producer':
@@ -149,6 +161,15 @@ def build_playlist():
         uri = get_spotify_uri(playlistId)
         return jsonify({'playlistUri': uri})
     return jsonify({})
+
+def pick_setlist_by_id(setlists, id):
+    for setlistObject in setlists:
+        if setlistObject.get('id') == id:
+            setlist = safe_get(setlistObject, 'sets', 'set')
+            if setlist:
+                songList = setlist[0]
+                return songList.get('song')
+    return {}
 
 def pick_most_recent_setlist(setlists):
     for setlistObject in setlists:
