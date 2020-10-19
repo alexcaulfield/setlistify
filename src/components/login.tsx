@@ -8,7 +8,7 @@ interface LoginProps {
 }
 const Login = ({authUrl}: LoginProps) => (
   <>
-    <Image src={Logo} size='huge' centered/>
+    <Image src={Logo} size='large' centered/>
     <a href={authUrl}>
       <Button>
         <Icon name='spotify' />
