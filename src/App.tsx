@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import './App.css';
 import 'semantic-ui-css/semantic.min.css';
-import Footer from './components/footer';
 import { BrowserRouter as Router, } from 'react-router-dom';
 import AppRouting from "./components/app_routing";
 import HeaderCard from "./components/header_card";
@@ -45,7 +44,6 @@ function App() {
         </div>
       </Router>
       </div>
-      <Footer />
     </div>
   );
 }
