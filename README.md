@@ -9,12 +9,12 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 * TypeScript
 * React
 * Python
-* Flask
+  * Flask
 * Semantic UI
 * Spotify API
-* Spotipy - Spotify Python Wrapper
+  * Spotipy - Spotify Python Wrapper
 * Setlist FM API
-* Repertorio - Setlist.fm Python Wrapper
+  * Repertorio - Setlist.fm Python Wrapper
 * Serverless
 * AWS Lambda
 
