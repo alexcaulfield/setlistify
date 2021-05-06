@@ -1,4 +1,4 @@
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-Session==0.3.2
 Flask==1.1.2
 Jinja2==2.11.2
