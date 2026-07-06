@@ -28,5 +28,65 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 * songs they've written, or songs they've produced
 * Playlists from TV and Movies
 
+---
+
+## Running Locally
+
+This project has two parts: a React frontend and a Flask backend. Both need to be running simultaneously.
+
+### Prerequisites
+
+* **Node.js** (v16 recommended — Node 17+ requires `--openssl-legacy-provider` which is already set in `npm start`)
+* **npm** (use npm, not yarn — the project's `package-lock.json` is the authoritative lock file)
+* **Python 3.7+**
+* A [Spotify Developer](https://developer.spotify.com/dashboard) app (for `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`)
+* A [Setlist.fm API](https://api.setlist.fm/docs/1.0/index.html) key
+
+### 1. Frontend (React)
+
+```bash
+# Install dependencies
+npm install
+
+# Start the dev server (runs on http://localhost:3000)
+npm start
+```
+
+> The React app proxies API requests to `http://localhost:5000` (the Flask backend).
+
+### 2. Backend (Flask)
+
+```bash
+cd flask-app
+
+# Create a virtual environment and install dependencies
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Create a `.env` file inside `flask-app/`:
+
+```
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+SETLIST_FM_API_KEY=your_setlistfm_api_key
+APP_SECRET_KEY=any_random_secret_string
+```
+
+Then start the Flask server:
+
+```bash
+IS_OFFLINE=true python app.py
+```
+
+The backend will be available at `http://localhost:5000`.
+
+### 3. Open the app
+
+Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
 ### Resources
-https://www.serverless.com/blog/flask-python-rest-api-serverless-lambda-dynamodb 
+https://www.serverless.com/blog/flask-python-rest-api-serverless-lambda-dynamodb
