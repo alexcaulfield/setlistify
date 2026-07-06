@@ -36,11 +36,13 @@ This project has two parts: a React frontend and a Flask backend. Both need to b
 
 ### Prerequisites
 
-* **Node.js** (v16 recommended — Node 17+ requires `--openssl-legacy-provider` which is already set in `npm start`)
+* **Node.js v18** (required — webpack 4 needs `--openssl-legacy-provider` on Node 17+, which is set in `npm start`/`npm run build`. Use `nvm install 18 && nvm use 18` if needed)
 * **npm** (use npm, not yarn — the project's `package-lock.json` is the authoritative lock file)
 * **Python 3.7+**
 * A [Spotify Developer](https://developer.spotify.com/dashboard) app (for `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`)
 * A [Setlist.fm API](https://api.setlist.fm/docs/1.0/index.html) key
+
+> **Netlify**: Node 18 is pinned in `netlify.toml`. No manual configuration needed.
 
 ### 1. Frontend (React)
 
