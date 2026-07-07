@@ -1,0 +1,8 @@
+[build]
+  command = "yarn build"
+  publish = "build" 
+
+[build.environment]
+  YARN_VERSION = "4.17.0"
+  COREPACK_ENABLE_DOWNLOADS = "1"
+  CI = ""
