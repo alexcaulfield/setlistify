@@ -43,6 +43,7 @@
   "packageManager": "yarn@4.17.0",
   "resolutions": {
     "@types/react": "^16.14.43",
-    "@types/react-dom": "^16.9.23"
+    "@types/react-dom": "^16.9.23",
+    "underscore": "^1.13.8"
   }
 }
