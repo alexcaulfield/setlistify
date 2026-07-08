@@ -24,7 +24,7 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token, setConcertId
           {
             // Date, Location, Songs
             text:
-              `${dateSplit[1]}/${dateSplit[0]}/${dateSplit[2]} 
+              `${dateSplit[0]}/${dateSplit[1]}/${dateSplit[2]} 
               - ${setlist.venue.city.name}, ${setlist.venue.city.country.name}
               - ${setlist.sets.set[0].song.length} Songs`,
             value: setlist.id,
