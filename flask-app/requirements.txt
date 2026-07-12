@@ -10,7 +10,7 @@ Flask-Cors==3.0.8
 Flask-Session==0.3.2
 idna==2.9
 itsdangerous==1.1.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 jmespath==0.10.0
 MarkupSafe==1.1.1
 PyJWT==1.7.1
