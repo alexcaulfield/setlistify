@@ -4,7 +4,7 @@ Flask==1.1.2
 Jinja2==3.1.6
 MarkupSafe==1.1.1
 PyJWT==2.13.0
-Werkzeug==1.0.1
+Werkzeug==3.1.6
 boto3==1.14.16
 botocore==1.17.16
 cachelib==0.1.1
