@@ -91,7 +91,7 @@ def get_user():
 
     return jsonify({
         'user': data,
-        'token': encoded_access_token.decode()
+        'token': encoded_access_token
     })
 
 # get results for search query from Spotify API
@@ -101,7 +101,7 @@ def get_user():
 @cross_origin(['www.setlistify.app'])
 def get_artist_results():
     token        = request.json.get('token')
-    token_object = jwt.decode(token, APP_SECRET_KEY, algorithm='HS256')
+    token_object = jwt.decode(token, APP_SECRET_KEY, algorithms=['HS256'])
     access_token = token_object.get('access_token')
 
     query        = request.json.get('query')
@@ -130,7 +130,7 @@ def get_artist_setlists():
 @cross_origin(['www.setlistify.app'])
 def build_playlist():
     token        = request.json.get('token')
-    token_object = jwt.decode(token, APP_SECRET_KEY, algorithm='HS256')
+    token_object = jwt.decode(token, APP_SECRET_KEY, algorithms=['HS256'])
     access_token = token_object.get('access_token')
 
     artistName   = request.json.get('artistName')

@@ -17,7 +17,8 @@ custom:
 
 provider:
   name: aws
-  runtime: python3.7
+  runtime: python3.11
+
   stage: dev
   region: us-east-1
   environment:
