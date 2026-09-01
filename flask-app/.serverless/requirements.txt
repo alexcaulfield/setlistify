@@ -20,7 +20,7 @@ python-decouple==3.3
 python-dotenv==0.13.0
 repertorio==0.0.1
 requests==2.24.0
-s3transfer==0.3.3
+s3transfer==0.19.2
 six==1.15.0
 spotipy==2.25.2
 urllib3==2.7.0
