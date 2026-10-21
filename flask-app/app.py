@@ -20,11 +20,27 @@ import uuid
 # https://stackoverflow.com/questions/25833613/python-safe-method-to-get-value-of-nested-dictionary
 def safe_get(dct, *keys):
     for key in keys:
+        if not isinstance(dct, dict):
+            return None
         try:
             dct = dct[key]
-        except KeyError:
+        except (KeyError, TypeError):
             return None
     return dct
+
+def setlist_has_songs(setlist):
+    """Check if a setlist has at least one actual song."""
+    sets = safe_get(setlist, 'sets', 'set')
+    if not sets or not isinstance(sets, list):
+        return False
+    for s in sets:
+        if isinstance(s, dict):
+            songs = s.get('song')
+            if isinstance(songs, list) and len(songs) > 0:
+                return True
+    return False
+
+ARTIST_MBID_CACHE = {}
 
 IS_OFFLINE = os.environ.get('IS_OFFLINE')
 
@@ -35,7 +51,7 @@ APP_SECRET_KEY        = config('APP_SECRET_KEY')        if IS_OFFLINE else os.en
 SETLIST_FM_API_KEY    = config('SETLIST_FM_API_KEY')    if IS_OFFLINE else os.environ['SETLIST_FM_API_KEY']
 
 # Setting URLs based on environment
-SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else 'https://setlistify.app'
+SETLISTIFY_CLIENT_BASE = 'http://127.0.0.1:3000' if IS_OFFLINE else 'https://setlistify.app'
 REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
 
 SPOTIFY_API_BASE = 'https://accounts.spotify.com'
@@ -112,19 +128,116 @@ def get_artist_results():
     results = spotify.search(q='artist:' + query, type='artist', limit=query_limit)
     return jsonify({'artists': results['artists']['items']})
 
+# search setlist.fm artists
+# params: string artistName
+# returns: array of setlist.fm artist candidates with mbid and disambiguation
+@app.route('/setlistArtists', methods=['POST'])
+@cross_origin(['www.setlistify.app'])
+def get_setlist_artists():
+    artistName = request.json.get('artistName')
+    if not artistName:
+        return jsonify({'artists': []})
+    try:
+        artistsData = setlistApi.artists(artistName=artistName, sort='relevance')
+        return jsonify({'artists': artistsData.get('artist', [])})
+    except Exception as e:
+        app.logger.error(f"Error searching artists on setlist.fm: {e}")
+        return jsonify({'artists': [], 'error': str(e)}), 500
+
 # get artist setlists
-# params: artist name
+# params: string artistName (optional), string artistMbid (optional)
 # returns: array of setlists
 @app.route('/artistSetlists', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_artist_setlists():
     artistName = request.json.get('artistName')
-    artistSetlistsData = setlistApi.setlists(artistName=artistName)
-    setlists = artistSetlistsData.get('setlist')
-    return jsonify({'artistSetlists': setlists})
+    artistMbid = request.json.get('artistMbid')
+
+    # 1. If artist MBID is provided, fetch directly for that explicit artist
+    if artistMbid:
+        try:
+            artistSetlistsData = setlistApi.artist_setlists(pk=artistMbid)
+            setlists = artistSetlistsData.get('setlist', []) if isinstance(artistSetlistsData, dict) else []
+            if artistName:
+                ARTIST_MBID_CACHE[artistName.strip().lower()] = artistMbid
+            return jsonify({'artistSetlists': setlists, 'artistMbid': artistMbid})
+        except Exception as e:
+            app.logger.info(f"Setlists not found or error for MBID {artistMbid}: {e}")
+
+    # 2. If artistName is provided, find the matching artist entity on setlist.fm that has setlists
+    if artistName:
+        cache_key = artistName.strip().lower()
+        if cache_key in ARTIST_MBID_CACHE:
+            cached_mbid = ARTIST_MBID_CACHE[cache_key]
+            try:
+                artistSetlistsData = setlistApi.artist_setlists(pk=cached_mbid)
+                setlists = artistSetlistsData.get('setlist', []) if isinstance(artistSetlistsData, dict) else []
+                if setlists:
+                    return jsonify({'artistSetlists': setlists, 'artistMbid': cached_mbid})
+            except Exception as e:
+                app.logger.debug(f"Cached MBID {cached_mbid} fetch failed, falling back to search: {e}")
+                ARTIST_MBID_CACHE.pop(cache_key, None)
+
+        try:
+            # Sort by relevance to surface notable matching artists first
+            artistSearchData = setlistApi.artists(artistName=artistName, sort='relevance')
+            artists = artistSearchData.get('artist', []) if isinstance(artistSearchData, dict) else []
+            if artists:
+                # Group exact name matches first
+                exact_matches = [
+                    a for a in artists
+                    if a.get('name', '').strip().lower() == cache_key
+                ]
+                # Prioritize exact matches, but cap check to at most 3 candidates to avoid rate limits
+                candidates = (exact_matches if exact_matches else artists)[:3]
+
+                best_setlists = []
+                best_mbid = None
+
+                for candidate in candidates:
+                    mbid = candidate.get('mbid')
+                    if not mbid:
+                        continue
+                    try:
+                        data = setlistApi.artist_setlists(pk=mbid)
+                        candidate_setlists = data.get('setlist', []) if isinstance(data, dict) else []
+                        has_songs = any(setlist_has_songs(s) for s in candidate_setlists)
+                        if has_songs:
+                            ARTIST_MBID_CACHE[cache_key] = mbid
+                            return jsonify({'artistSetlists': candidate_setlists, 'artistMbid': mbid})
+                        elif candidate_setlists and not best_setlists:
+                            best_setlists = candidate_setlists
+                            best_mbid = mbid
+                    except Exception as err:
+                        # 404 is standard for setlist.fm when an artist has 0 setlists
+                        app.logger.debug(f"Setlists check for MBID {mbid}: {err}")
+                        continue
+
+                if best_setlists:
+                    if best_mbid:
+                        ARTIST_MBID_CACHE[cache_key] = best_mbid
+                    return jsonify({'artistSetlists': best_setlists, 'artistMbid': best_mbid})
+        except Exception as e:
+            app.logger.warning(f"Error searching artists on setlist.fm: {e}")
+
+        # Fallback to search endpoint by artistName directly
+        try:
+            artistSetlistsData = setlistApi.setlists(artistName=artistName)
+            raw_setlists = artistSetlistsData.get('setlist', []) if isinstance(artistSetlistsData, dict) else []
+            # Filter out setlists from unrelated artists (e.g. venues in Lawrence, KS with Dave East)
+            filtered = [
+                s for s in raw_setlists
+                if cache_key in (safe_get(s, 'artist', 'name') or '').strip().lower()
+            ]
+            return jsonify({'artistSetlists': filtered if filtered else raw_setlists})
+        except Exception as e:
+            app.logger.error(f"Error fetching setlists by name '{artistName}': {e}")
+            return jsonify({'artistSetlists': []})
+
+    return jsonify({'artistSetlists': []})
 
 # Build a playlist
-# params: string playlist type, string artist name
+# params: string playlist type, string artist name, string playlistId (setlist ID), optional string artistMbid
 # returns: playlist URI
 @app.route('/buildPlaylist', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
@@ -137,16 +250,30 @@ def build_playlist():
     artistId     = request.json.get('artistId')
     playlistType = request.json.get('playlistType')
     playlistId   = request.json.get('playlistId')
+    artistMbid   = request.json.get('artistMbid')
 
     spotify = spotipy.Spotify(auth=access_token)
     user = spotify.current_user()
 
     songs = []
     if playlistType == 'Setlist':
-        artistSetlists = setlistApi.setlists(artistName=artistName)
-        setlistData = pick_setlist_by_id(artistSetlists['setlist'], playlistId)
-        songs = list(map(lambda song: song.get('name'), setlistData.get('songs')))
-        playlistName = "{}'s Setlist from {}".format(artistName, setlistData.get('date'))
+        # Fetch the explicit setlist directly by its unique setlist ID
+        try:
+            setlistObject = setlistApi.setlist(pk=playlistId)
+            songs = extract_songs_from_setlist(setlistObject)
+            eventDate = setlistObject.get('eventDate', '')
+            playlistName = "{}'s Setlist from {}".format(artistName, eventDate)
+        except Exception as e:
+            app.logger.warning(f"Failed to fetch setlist directly by ID {playlistId}: {e}")
+            # Fallback using artistMbid or artistName search
+            if artistMbid:
+                artistSetlists = setlistApi.artist_setlists(pk=artistMbid)
+            else:
+                artistSetlists = setlistApi.setlists(artistName=artistName)
+            setlistData = pick_setlist_by_id(artistSetlists.get('setlist', []), playlistId)
+            raw_songs = setlistData.get('songs') or []
+            songs = [s.get('name') if isinstance(s, dict) else s for s in raw_songs]
+            playlistName = "{}'s Setlist from {}".format(artistName, setlistData.get('date', ''))
     elif playlistType == 'Producer':
         print('producer')
         get_producer_data(artistId, access_token)
@@ -162,25 +289,45 @@ def build_playlist():
         return jsonify({'playlistUri': uri})
     return jsonify({})
 
+def extract_songs_from_setlist(setlistObject):
+    """Extract all song names across all sets and encores from a setlist object."""
+    if not setlistObject:
+        return []
+    sets = safe_get(setlistObject, 'sets', 'set') or []
+    songs = []
+    for s in sets:
+        for song in s.get('song', []):
+            if isinstance(song, dict) and song.get('name'):
+                songs.append(song.get('name'))
+            elif isinstance(song, str):
+                songs.append(song)
+    return songs
+
 # return the item from the object from the given setlist
 def pick_setlist_by_id(setlists, id):
     for setlistObject in setlists:
         if setlistObject.get('id') == id:
-            setlist = safe_get(setlistObject, 'sets', 'set')
-            if setlist:
-                songList = setlist[0]
+            sets = safe_get(setlistObject, 'sets', 'set')
+            if sets:
                 setlistData = dict()
-                setlistData['songs'] = songList.get('song')
+                # Collect songs across all sets (main set + encores)
+                all_songs = []
+                for s in sets:
+                    all_songs.extend(s.get('song', []))
+                setlistData['songs'] = all_songs
                 setlistData['date'] = setlistObject.get('eventDate')
                 return setlistData
     return {}
 
 def pick_most_recent_setlist(setlists):
     for setlistObject in setlists:
-        setlist = safe_get(setlistObject, 'sets', 'set')
-        if setlist:
-            songList = setlist[0]
-            return songList.get('song')
+        sets = safe_get(setlistObject, 'sets', 'set')
+        if sets:
+            # Collect songs across all sets (main set + encores)
+            all_songs = []
+            for s in sets:
+                all_songs.extend(s.get('song', []))
+            return all_songs
     return {}
 
 def createPlaylist(userId, sp, artistName, playlistName):
@@ -237,3 +384,6 @@ def get_producer_data(producerId, accessToken):
     print(type(data))
     print(data)
     return []
+
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)

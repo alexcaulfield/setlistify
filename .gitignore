@@ -28,4 +28,14 @@ yarn-error.log*
 # Python
 __pycache__/
 *.pyc
+.cache
+.cache/
+flask_session/
+flask-app/flask_session/
+flask-app/.cache
+flask-app/.cache/
+.serverless/
+flask-app/.serverless/
+package-lock.json
+
 
