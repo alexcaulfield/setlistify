@@ -32,6 +32,7 @@ app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = APP_SECRET_KEY
 app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = '/tmp/flask_session' if not IS_OFFLINE else './flask_session'
 Session(app)
 CORS(app, supports_credentials=True)
 setlistApi = Repertorio(SETLIST_FM_API_KEY)
@@ -44,7 +45,9 @@ setlistApi = Repertorio(SETLIST_FM_API_KEY)
 @app.route("/authUrl")
 @cross_origin(['www.setlistify.app'])
 def verify():
-    cache_path=f'.cache/.spotipyoauthcache{uuid.uuid4()}'
+    cache_dir = '/tmp/.cache' if not IS_OFFLINE else '.cache'
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_path = f'{cache_dir}/.spotipyoauthcache{uuid.uuid4()}'
     auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=cache_path)
     authUrl = auth_manager.get_authorize_url()
     return jsonify({

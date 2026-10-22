@@ -84,6 +84,12 @@ The backend will be available at `http://localhost:5000`.
 
 Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Production deploy
+
+1. Merge changes triggers a Netlify deploy of the UI
+2. Deploy the backend methods via `export $(cat .
+env | xargs) && npx serverless deploy`
+
 ---
 
 ### Resources
