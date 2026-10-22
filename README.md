@@ -70,6 +70,7 @@ SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 SETLIST_FM_API_KEY=your_setlistfm_api_key
 APP_SECRET_KEY=any_random_secret_string
+REDIRECT_URI=https://setlistify.app/callback
 ```
 
 Then start the Flask server:
@@ -87,8 +88,13 @@ Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 ## Production deploy
 
 1. Merge changes triggers a Netlify deploy of the UI
-2. Deploy the backend methods via `export $(cat .
-env | xargs) && npx serverless deploy`
+2. Deploy the backend methods (fish shell)
+```
+for line in (cat .env | string match -v '^#*' | string match -v '^$')
+    set -gx (string split -m 1 = $line)
+end
+npx serverless deploy
+```
 
 ---
 
