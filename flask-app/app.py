@@ -8,6 +8,7 @@ from repertorio import Repertorio
 
 from config import (
     APP_SECRET_KEY,
+    IS_OFFLINE,
     REDIRECT_URI,
     SCOPE,
     SETLIST_FM_API_KEY,
@@ -43,7 +44,7 @@ setlistApi = Repertorio(SETLIST_FM_API_KEY)
 # params: none
 # returns: string authUrl
 @app.route("/authUrl")
-@cross_origin(['www.setlistify.app'])
+@cross_origin(origins=['https://www.setlistify.app', 'https://setlistify.app', 'http://localhost:3000'])
 def verify():
     cache_dir = '/tmp/.cache' if not IS_OFFLINE else '.cache'
     os.makedirs(cache_dir, exist_ok=True)
@@ -61,7 +62,7 @@ def verify():
 # params: string code
 # returns: dict results (representing user object from Spotify API)
 @app.route("/getUser", methods=['POST'])
-@cross_origin(['www.setlistify.app'])
+@cross_origin(origins=['https://www.setlistify.app', 'https://setlistify.app', 'http://localhost:3000'])
 def get_user():
     session.clear()
     code = request.json.get('code')
@@ -84,7 +85,7 @@ def get_user():
 # params: string artist query, int limit
 # returns: array of artist results
 @app.route('/artistSearch', methods=['POST'])
-@cross_origin(['www.setlistify.app'])
+@cross_origin(origins=['https://www.setlistify.app', 'https://setlistify.app', 'http://localhost:3000'])
 def get_artist_results():
     token        = request.json.get('token')
     token_object = jwt.decode(token, APP_SECRET_KEY, algorithms=['HS256'])
@@ -118,7 +119,7 @@ def get_setlist_artists():
 # params: string artistName (optional), string artistMbid (optional)
 # returns: array of setlists
 @app.route('/artistSetlists', methods=['POST'])
-@cross_origin(['www.setlistify.app'])
+@cross_origin(origins=['https://www.setlistify.app', 'https://setlistify.app', 'http://localhost:3000'])
 def get_artist_setlists():
     artistName = request.json.get('artistName')
     artistMbid = request.json.get('artistMbid')
@@ -194,7 +195,7 @@ def get_artist_setlists():
 # params: string playlist type, string artist name, string playlistId (setlist ID), optional string artistMbid
 # returns: playlist URI
 @app.route('/buildPlaylist', methods=['POST'])
-@cross_origin(['www.setlistify.app'])
+@cross_origin(origins=['https://www.setlistify.app', 'https://setlistify.app', 'http://localhost:3000'])
 def build_playlist():
     token        = request.json.get('token')
     token_object = jwt.decode(token, APP_SECRET_KEY, algorithms=['HS256'])
