@@ -18,7 +18,6 @@ def getTrackId(track):
     return ''
 
 def insertSongsIntoPlaylist(userId, songNames, artistName, sp, playlistId):
-    # sp.user_playlist_add_tracks(username, playlist_id, track_ids)
     tracks = []
     for trackName in songNames:
         if trackName:
