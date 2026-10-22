@@ -1,65 +1,34 @@
-import os
-from flask import Flask, redirect, url_for, session, request, jsonify, Response, json
-from dotenv import load_dotenv
-import spotipy
-import spotipy.util as util
-from spotipy import oauth2
-from repertorio import Repertorio
-from collections import OrderedDict
-import requests
-import boto3
-from decouple import config
+import uuid
+from flask import Flask, session, request, jsonify
 from flask_cors import CORS, cross_origin
 from flask_session import Session
 import jwt
-import base64
-import uuid
+import spotipy
+from repertorio import Repertorio
 
-# Helper functions
-# Safely gets from nested dict
-# https://stackoverflow.com/questions/25833613/python-safe-method-to-get-value-of-nested-dictionary
-def safe_get(dct, *keys):
-    for key in keys:
-        if not isinstance(dct, dict):
-            return None
-        try:
-            dct = dct[key]
-        except (KeyError, TypeError):
-            return None
-    return dct
-
-def setlist_has_songs(setlist):
-    """Check if a setlist has at least one actual song."""
-    sets = safe_get(setlist, 'sets', 'set')
-    if not sets or not isinstance(sets, list):
-        return False
-    for s in sets:
-        if isinstance(s, dict):
-            songs = s.get('song')
-            if isinstance(songs, list) and len(songs) > 0:
-                return True
-    return False
+from config import (
+    APP_SECRET_KEY,
+    REDIRECT_URI,
+    SCOPE,
+    SETLIST_FM_API_KEY,
+    SPOTIFY_CLIENT_ID,
+    SPOTIFY_CLIENT_SECRET,
+)
+from setlist_helpers import (
+    extract_songs_from_setlist,
+    pick_setlist_by_id,
+    safe_get,
+    setlist_has_songs,
+)
+from spotify_helpers import (
+    createPlaylist,
+    get_producer_data,
+    get_songwriter_data,
+    get_spotify_uri,
+    insertSongsIntoPlaylist,
+)
 
 ARTIST_MBID_CACHE = {}
-
-IS_OFFLINE = os.environ.get('IS_OFFLINE')
-
-# Setting secret keys based on environment
-SPOTIFY_CLIENT_ID     = config('SPOTIFY_CLIENT_ID')     if IS_OFFLINE else os.environ['SPOTIFY_CLIENT_ID']
-SPOTIFY_CLIENT_SECRET = config('SPOTIFY_CLIENT_SECRET') if IS_OFFLINE else os.environ['SPOTIFY_CLIENT_SECRET']
-APP_SECRET_KEY        = config('APP_SECRET_KEY')        if IS_OFFLINE else os.environ['APP_SECRET_KEY']
-SETLIST_FM_API_KEY    = config('SETLIST_FM_API_KEY')    if IS_OFFLINE else os.environ['SETLIST_FM_API_KEY']
-
-# Setting URLs based on environment
-SETLISTIFY_CLIENT_BASE = 'http://127.0.0.1:3000' if IS_OFFLINE else 'https://setlistify.app'
-REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
-
-SPOTIFY_API_BASE = 'https://accounts.spotify.com'
-
-SCOPE = 'playlist-modify-public'
-
-# Set this to True for testing but you probably want it set to False in production.
-SHOW_DIALOG = True # if IS_OFFLINE else False
 
 app = Flask(__name__)
 app.debug = True
@@ -288,102 +257,6 @@ def build_playlist():
         uri = get_spotify_uri(playlistId)
         return jsonify({'playlistUri': uri})
     return jsonify({})
-
-def extract_songs_from_setlist(setlistObject):
-    """Extract all song names across all sets and encores from a setlist object."""
-    if not setlistObject:
-        return []
-    sets = safe_get(setlistObject, 'sets', 'set') or []
-    songs = []
-    for s in sets:
-        for song in s.get('song', []):
-            if isinstance(song, dict) and song.get('name'):
-                songs.append(song.get('name'))
-            elif isinstance(song, str):
-                songs.append(song)
-    return songs
-
-# return the item from the object from the given setlist
-def pick_setlist_by_id(setlists, id):
-    for setlistObject in setlists:
-        if setlistObject.get('id') == id:
-            sets = safe_get(setlistObject, 'sets', 'set')
-            if sets:
-                setlistData = dict()
-                # Collect songs across all sets (main set + encores)
-                all_songs = []
-                for s in sets:
-                    all_songs.extend(s.get('song', []))
-                setlistData['songs'] = all_songs
-                setlistData['date'] = setlistObject.get('eventDate')
-                return setlistData
-    return {}
-
-def pick_most_recent_setlist(setlists):
-    for setlistObject in setlists:
-        sets = safe_get(setlistObject, 'sets', 'set')
-        if sets:
-            # Collect songs across all sets (main set + encores)
-            all_songs = []
-            for s in sets:
-                all_songs.extend(s.get('song', []))
-            return all_songs
-    return {}
-
-def createPlaylist(userId, sp, artistName, playlistName):
-    # create playlist on their account
-    description = 'A playlist made with the setlistify.app'
-    result = sp.user_playlist_create(userId, playlistName, public=True, description=description)
-    playlistId = result.get('id')
-
-    # return playlist id
-    return playlistId
-
-def getTrackId(track):
-    trackItems = safe_get(track, 'tracks', 'items')
-    if trackItems:
-        return 'spotify:track:' + trackItems[0].get('id')
-    return ''
-
-def insertSongsIntoPlaylist(userId, songNames, artistName, sp, playlistId):
-    # sp.user_playlist_add_tracks(username, playlist_id, track_ids)
-    tracks = []
-    for trackName in songNames:
-        if trackName:
-            tracks.append(sp.search(q='track:' + trackName + ' artist:' + artistName, limit=1, type='track'))
-    trackIds = map(getTrackId, tracks)
-
-    result = sp.user_playlist_add_tracks(userId, playlistId, filter(lambda track: track, trackIds))
-    # check if we've successfully added tracks to the playlist
-    if result:
-        playlistData = sp.playlist(playlistId)
-        playlistUrl = safe_get(playlistData, 'external_urls', 'spotify')
-        return playlistUrl
-    return ''
-
-def get_spotify_uri(playlistId):
-    return f"spotify:playlist:{playlistId}"
-
-
-# This endpoint doesn't work yet
-def get_songwriter_data(songwriterId, accessToken):
-    parameters = {"id": songwriterId}
-    headers = {"Authorization": "Bearer {}".format(accessToken)}
-    response = requests.get("https://api.spotify.com/v1/songwriter/", headers=headers, params=parameters)
-    data = response.json()
-    print(type(data))
-    print(data)
-    return []
-
-# This endpoint doesn't work yet
-def get_producer_data(producerId, accessToken):
-    parameters = {"id": producerId}
-    headers = {"Authorization": "Bearer {}".format(accessToken)}
-    response = requests.get("https://api.spotify.com/v1/producer/", headers=headers, params=parameters)
-    data = response.json()
-    print(type(data))
-    print(data)
-    return []
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
