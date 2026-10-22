@@ -1,4 +1,6 @@
+import os
 import uuid
+import traceback
 from flask import Flask, session, request, jsonify
 from flask_cors import CORS, cross_origin
 from flask_session import Session
@@ -32,11 +34,19 @@ from spotify_helpers import (
 app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = APP_SECRET_KEY
+
+session_dir = '/tmp/flask_session' if not IS_OFFLINE else './flask_session'
+os.makedirs(session_dir, exist_ok=True)
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = '/tmp/flask_session' if not IS_OFFLINE else './flask_session'
+app.config['SESSION_FILE_DIR'] = session_dir
 Session(app)
 CORS(app, supports_credentials=True)
 setlistApi = Repertorio(SETLIST_FM_API_KEY)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    traceback.print_exc()
+    return jsonify({"error": str(e), "type": type(e).__name__}), 500
 
 # Begin API Endpoints
 
