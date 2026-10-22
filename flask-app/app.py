@@ -28,8 +28,6 @@ from spotify_helpers import (
     insertSongsIntoPlaylist,
 )
 
-ARTIST_MBID_CACHE = {}
-
 app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = APP_SECRET_KEY
@@ -127,26 +125,13 @@ def get_artist_setlists():
         try:
             artistSetlistsData = setlistApi.artist_setlists(pk=artistMbid)
             setlists = artistSetlistsData.get('setlist', []) if isinstance(artistSetlistsData, dict) else []
-            if artistName:
-                ARTIST_MBID_CACHE[artistName.strip().lower()] = artistMbid
             return jsonify({'artistSetlists': setlists, 'artistMbid': artistMbid})
         except Exception as e:
             app.logger.info(f"Setlists not found or error for MBID {artistMbid}: {e}")
 
     # 2. If artistName is provided, find the matching artist entity on setlist.fm that has setlists
     if artistName:
-        cache_key = artistName.strip().lower()
-        if cache_key in ARTIST_MBID_CACHE:
-            cached_mbid = ARTIST_MBID_CACHE[cache_key]
-            try:
-                artistSetlistsData = setlistApi.artist_setlists(pk=cached_mbid)
-                setlists = artistSetlistsData.get('setlist', []) if isinstance(artistSetlistsData, dict) else []
-                if setlists:
-                    return jsonify({'artistSetlists': setlists, 'artistMbid': cached_mbid})
-            except Exception as e:
-                app.logger.debug(f"Cached MBID {cached_mbid} fetch failed, falling back to search: {e}")
-                ARTIST_MBID_CACHE.pop(cache_key, None)
-
+        normalized_name = artistName.strip().lower()
         try:
             # Sort by relevance to surface notable matching artists first
             artistSearchData = setlistApi.artists(artistName=artistName, sort='relevance')
@@ -155,7 +140,7 @@ def get_artist_setlists():
                 # Group exact name matches first
                 exact_matches = [
                     a for a in artists
-                    if a.get('name', '').strip().lower() == cache_key
+                    if a.get('name', '').strip().lower() == normalized_name
                 ]
                 # Prioritize exact matches, but cap check to at most 3 candidates to avoid rate limits
                 candidates = (exact_matches if exact_matches else artists)[:3]
@@ -172,7 +157,6 @@ def get_artist_setlists():
                         candidate_setlists = data.get('setlist', []) if isinstance(data, dict) else []
                         has_songs = any(setlist_has_songs(s) for s in candidate_setlists)
                         if has_songs:
-                            ARTIST_MBID_CACHE[cache_key] = mbid
                             return jsonify({'artistSetlists': candidate_setlists, 'artistMbid': mbid})
                         elif candidate_setlists and not best_setlists:
                             best_setlists = candidate_setlists
@@ -183,8 +167,6 @@ def get_artist_setlists():
                         continue
 
                 if best_setlists:
-                    if best_mbid:
-                        ARTIST_MBID_CACHE[cache_key] = best_mbid
                     return jsonify({'artistSetlists': best_setlists, 'artistMbid': best_mbid})
         except Exception as e:
             app.logger.warning(f"Error searching artists on setlist.fm: {e}")
@@ -196,7 +178,7 @@ def get_artist_setlists():
             # Filter out setlists from unrelated artists (e.g. venues in Lawrence, KS with Dave East)
             filtered = [
                 s for s in raw_setlists
-                if cache_key in (safe_get(s, 'artist', 'name') or '').strip().lower()
+                if normalized_name in (safe_get(s, 'artist', 'name') or '').strip().lower()
             ]
             return jsonify({'artistSetlists': filtered if filtered else raw_setlists})
         except Exception as e:
