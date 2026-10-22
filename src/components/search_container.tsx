@@ -7,33 +7,45 @@ interface SearchContainerProps {
   setPlaylistUrl: (string) => void,
   token: string,
   setConcertId: (string) => void,
+  setArtistMbid: (string) => void,
 }
 
-const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token, setConcertId}: SearchContainerProps) => {
+const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token, setConcertId, setArtistMbid}: SearchContainerProps) => {
   const [searchOptions, setSearchOptions] = useState([]);
   const [value, setValue] = useState('');
   const [setlists, setSetlists] = useState([]);
 
   const formatSetlists = ({artistSetlists}) => {
+    if (!artistSetlists || !Array.isArray(artistSetlists)) return [];
     return artistSetlists.reduce((setlists, setlist) => {
-      if (setlist.sets.set.length > 0) {
-        const dateSplit = setlist.eventDate.split('-');
-        return [
-          ...setlists,
-          // formats for Semantic UI Dropdown
-          {
-            // Date, Location, Songs
-            text:
-              `${dateSplit[0]}/${dateSplit[1]}/${dateSplit[2]} 
-              - ${setlist.venue.city.name}, ${setlist.venue.city.country.name}
-              - ${setlist.sets.set[0].song.length} Songs`,
-            value: setlist.id,
-          }
-        ]
+      const sets = setlist?.sets?.set;
+      const setsArray = Array.isArray(sets) ? sets : [];
+      if (setsArray.length > 0) {
+        const dateSplit = (setlist?.eventDate || '').split('-');
+        // Count songs across all sets (main set + encores)
+        const totalSongs = setsArray.reduce(
+          (count, s) => count + (Array.isArray(s?.song) ? s.song.length : 0),
+          0
+        );
+        if (totalSongs > 0) {
+          const venueCity = setlist?.venue?.city?.name || 'Unknown City';
+          const venueCountry = setlist?.venue?.city?.country?.name || '';
+          const location = venueCountry ? `${venueCity}, ${venueCountry}` : venueCity;
+          const formattedDate = dateSplit.length === 3 ? `${dateSplit[0]}/${dateSplit[1]}/${dateSplit[2]}` : (setlist?.eventDate || '');
+          return [
+            ...setlists,
+            // formats for Semantic UI Dropdown
+            {
+              // Date, Location, Songs
+              text: `${formattedDate} - ${location} - ${totalSongs} Songs`,
+              value: setlist.id,
+            }
+          ];
+        }
       }
       return setlists;
-    }, [])
-  }
+    }, []);
+  };
 
   // get artist info
   const handleResultSelect = (
@@ -57,6 +69,8 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token, setConcertId
           setValue(artists[0].name);
           setPlaylistUrl('');
         })
+      // Reset MBID and setlists when a new artist is selected
+      setArtistMbid('');
       fetch(`${fetchUrl()}/artistSetlists`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -64,6 +78,10 @@ const SearchContainer = ({setSelectedArtist, setPlaylistUrl, token, setConcertId
       })
         .then(res => res.json())
         .then((result) => {
+          // Store the resolved MBID so buildPlaylist can use it directly
+          if (result.artistMbid) {
+            setArtistMbid(result.artistMbid);
+          }
           setSetlists(formatSetlists(result));
         })
     }

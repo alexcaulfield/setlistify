@@ -1,49 +1,32 @@
-import os
-from flask import Flask, redirect, url_for, session, request, jsonify, Response, json
-from dotenv import load_dotenv
-import spotipy
-import spotipy.util as util
-from spotipy import oauth2
-from repertorio import Repertorio
-from collections import OrderedDict
-import requests
-import boto3
-from decouple import config
+import uuid
+from flask import Flask, session, request, jsonify
 from flask_cors import CORS, cross_origin
 from flask_session import Session
 import jwt
-import base64
-import uuid
+import spotipy
+from repertorio import Repertorio
 
-# Helper functions
-# Safely gets from nested dict
-# https://stackoverflow.com/questions/25833613/python-safe-method-to-get-value-of-nested-dictionary
-def safe_get(dct, *keys):
-    for key in keys:
-        try:
-            dct = dct[key]
-        except KeyError:
-            return None
-    return dct
-
-IS_OFFLINE = os.environ.get('IS_OFFLINE')
-
-# Setting secret keys based on environment
-SPOTIFY_CLIENT_ID     = config('SPOTIFY_CLIENT_ID')     if IS_OFFLINE else os.environ['SPOTIFY_CLIENT_ID']
-SPOTIFY_CLIENT_SECRET = config('SPOTIFY_CLIENT_SECRET') if IS_OFFLINE else os.environ['SPOTIFY_CLIENT_SECRET']
-APP_SECRET_KEY        = config('APP_SECRET_KEY')        if IS_OFFLINE else os.environ['APP_SECRET_KEY']
-SETLIST_FM_API_KEY    = config('SETLIST_FM_API_KEY')    if IS_OFFLINE else os.environ['SETLIST_FM_API_KEY']
-
-# Setting URLs based on environment
-SETLISTIFY_CLIENT_BASE = 'http://localhost:3000' if IS_OFFLINE else 'https://setlistify.app'
-REDIRECT_URI           = f"{SETLISTIFY_CLIENT_BASE}/callback"
-
-SPOTIFY_API_BASE = 'https://accounts.spotify.com'
-
-SCOPE = 'playlist-modify-public'
-
-# Set this to True for testing but you probably want it set to False in production.
-SHOW_DIALOG = True # if IS_OFFLINE else False
+from config import (
+    APP_SECRET_KEY,
+    REDIRECT_URI,
+    SCOPE,
+    SETLIST_FM_API_KEY,
+    SPOTIFY_CLIENT_ID,
+    SPOTIFY_CLIENT_SECRET,
+)
+from setlist_helpers import (
+    extract_songs_from_setlist,
+    pick_setlist_by_id,
+    safe_get,
+    setlist_has_songs,
+)
+from spotify_helpers import (
+    createPlaylist,
+    get_producer_data,
+    get_songwriter_data,
+    get_spotify_uri,
+    insertSongsIntoPlaylist,
+)
 
 app = Flask(__name__)
 app.debug = True
@@ -112,19 +95,100 @@ def get_artist_results():
     results = spotify.search(q='artist:' + query, type='artist', limit=query_limit)
     return jsonify({'artists': results['artists']['items']})
 
+# search setlist.fm artists
+# params: string artistName
+# returns: array of setlist.fm artist candidates with mbid and disambiguation
+@app.route('/setlistArtists', methods=['POST'])
+@cross_origin(['www.setlistify.app'])
+def get_setlist_artists():
+    artistName = request.json.get('artistName')
+    if not artistName:
+        return jsonify({'artists': []})
+    try:
+        artistsData = setlistApi.artists(artistName=artistName, sort='relevance')
+        return jsonify({'artists': artistsData.get('artist', [])})
+    except Exception as e:
+        app.logger.error(f"Error searching artists on setlist.fm: {e}")
+        return jsonify({'artists': [], 'error': str(e)}), 500
+
 # get artist setlists
-# params: artist name
+# params: string artistName (optional), string artistMbid (optional)
 # returns: array of setlists
 @app.route('/artistSetlists', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
 def get_artist_setlists():
     artistName = request.json.get('artistName')
-    artistSetlistsData = setlistApi.setlists(artistName=artistName)
-    setlists = artistSetlistsData.get('setlist')
-    return jsonify({'artistSetlists': setlists})
+    artistMbid = request.json.get('artistMbid')
+
+    # 1. If artist MBID is provided, fetch directly for that explicit artist
+    if artistMbid:
+        try:
+            artistSetlistsData = setlistApi.artist_setlists(pk=artistMbid)
+            setlists = artistSetlistsData.get('setlist', []) if isinstance(artistSetlistsData, dict) else []
+            return jsonify({'artistSetlists': setlists, 'artistMbid': artistMbid})
+        except Exception as e:
+            app.logger.info(f"Setlists not found or error for MBID {artistMbid}: {e}")
+
+    # 2. If artistName is provided, find the matching artist entity on setlist.fm that has setlists
+    if artistName:
+        normalized_name = artistName.strip().lower()
+        try:
+            # Sort by relevance to surface notable matching artists first
+            artistSearchData = setlistApi.artists(artistName=artistName, sort='relevance')
+            artists = artistSearchData.get('artist', []) if isinstance(artistSearchData, dict) else []
+            if artists:
+                # Group exact name matches first
+                exact_matches = [
+                    a for a in artists
+                    if a.get('name', '').strip().lower() == normalized_name
+                ]
+                # Prioritize exact matches, but cap check to at most 3 candidates to avoid rate limits
+                candidates = (exact_matches if exact_matches else artists)[:3]
+
+                best_setlists = []
+                best_mbid = None
+
+                for candidate in candidates:
+                    mbid = candidate.get('mbid')
+                    if not mbid:
+                        continue
+                    try:
+                        data = setlistApi.artist_setlists(pk=mbid)
+                        candidate_setlists = data.get('setlist', []) if isinstance(data, dict) else []
+                        has_songs = any(setlist_has_songs(s) for s in candidate_setlists)
+                        if has_songs:
+                            return jsonify({'artistSetlists': candidate_setlists, 'artistMbid': mbid})
+                        elif candidate_setlists and not best_setlists:
+                            best_setlists = candidate_setlists
+                            best_mbid = mbid
+                    except Exception as err:
+                        # 404 is standard for setlist.fm when an artist has 0 setlists
+                        app.logger.debug(f"Setlists check for MBID {mbid}: {err}")
+                        continue
+
+                if best_setlists:
+                    return jsonify({'artistSetlists': best_setlists, 'artistMbid': best_mbid})
+        except Exception as e:
+            app.logger.warning(f"Error searching artists on setlist.fm: {e}")
+
+        # Fallback to search endpoint by artistName directly
+        try:
+            artistSetlistsData = setlistApi.setlists(artistName=artistName)
+            raw_setlists = artistSetlistsData.get('setlist', []) if isinstance(artistSetlistsData, dict) else []
+            # Filter out setlists from unrelated artists (e.g. venues in Lawrence, KS with Dave East)
+            filtered = [
+                s for s in raw_setlists
+                if normalized_name in (safe_get(s, 'artist', 'name') or '').strip().lower()
+            ]
+            return jsonify({'artistSetlists': filtered if filtered else raw_setlists})
+        except Exception as e:
+            app.logger.error(f"Error fetching setlists by name '{artistName}': {e}")
+            return jsonify({'artistSetlists': []})
+
+    return jsonify({'artistSetlists': []})
 
 # Build a playlist
-# params: string playlist type, string artist name
+# params: string playlist type, string artist name, string playlistId (setlist ID), optional string artistMbid
 # returns: playlist URI
 @app.route('/buildPlaylist', methods=['POST'])
 @cross_origin(['www.setlistify.app'])
@@ -137,16 +201,30 @@ def build_playlist():
     artistId     = request.json.get('artistId')
     playlistType = request.json.get('playlistType')
     playlistId   = request.json.get('playlistId')
+    artistMbid   = request.json.get('artistMbid')
 
     spotify = spotipy.Spotify(auth=access_token)
     user = spotify.current_user()
 
     songs = []
     if playlistType == 'Setlist':
-        artistSetlists = setlistApi.setlists(artistName=artistName)
-        setlistData = pick_setlist_by_id(artistSetlists['setlist'], playlistId)
-        songs = list(map(lambda song: song.get('name'), setlistData.get('songs')))
-        playlistName = "{}'s Setlist from {}".format(artistName, setlistData.get('date'))
+        # Fetch the explicit setlist directly by its unique setlist ID
+        try:
+            setlistObject = setlistApi.setlist(pk=playlistId)
+            songs = extract_songs_from_setlist(setlistObject)
+            eventDate = setlistObject.get('eventDate', '')
+            playlistName = "{}'s Setlist from {}".format(artistName, eventDate)
+        except Exception as e:
+            app.logger.warning(f"Failed to fetch setlist directly by ID {playlistId}: {e}")
+            # Fallback using artistMbid or artistName search
+            if artistMbid:
+                artistSetlists = setlistApi.artist_setlists(pk=artistMbid)
+            else:
+                artistSetlists = setlistApi.setlists(artistName=artistName)
+            setlistData = pick_setlist_by_id(artistSetlists.get('setlist', []), playlistId)
+            raw_songs = setlistData.get('songs') or []
+            songs = [s.get('name') if isinstance(s, dict) else s for s in raw_songs]
+            playlistName = "{}'s Setlist from {}".format(artistName, setlistData.get('date', ''))
     elif playlistType == 'Producer':
         print('producer')
         get_producer_data(artistId, access_token)
@@ -162,78 +240,5 @@ def build_playlist():
         return jsonify({'playlistUri': uri})
     return jsonify({})
 
-# return the item from the object from the given setlist
-def pick_setlist_by_id(setlists, id):
-    for setlistObject in setlists:
-        if setlistObject.get('id') == id:
-            setlist = safe_get(setlistObject, 'sets', 'set')
-            if setlist:
-                songList = setlist[0]
-                setlistData = dict()
-                setlistData['songs'] = songList.get('song')
-                setlistData['date'] = setlistObject.get('eventDate')
-                return setlistData
-    return {}
-
-def pick_most_recent_setlist(setlists):
-    for setlistObject in setlists:
-        setlist = safe_get(setlistObject, 'sets', 'set')
-        if setlist:
-            songList = setlist[0]
-            return songList.get('song')
-    return {}
-
-def createPlaylist(userId, sp, artistName, playlistName):
-    # create playlist on their account
-    description = 'A playlist made with the setlistify.app'
-    result = sp.user_playlist_create(userId, playlistName, public=True, description=description)
-    playlistId = result.get('id')
-
-    # return playlist id
-    return playlistId
-
-def getTrackId(track):
-    trackItems = safe_get(track, 'tracks', 'items')
-    if trackItems:
-        return 'spotify:track:' + trackItems[0].get('id')
-    return ''
-
-def insertSongsIntoPlaylist(userId, songNames, artistName, sp, playlistId):
-    # sp.user_playlist_add_tracks(username, playlist_id, track_ids)
-    tracks = []
-    for trackName in songNames:
-        if trackName:
-            tracks.append(sp.search(q='track:' + trackName + ' artist:' + artistName, limit=1, type='track'))
-    trackIds = map(getTrackId, tracks)
-
-    result = sp.user_playlist_add_tracks(userId, playlistId, filter(lambda track: track, trackIds))
-    # check if we've successfully added tracks to the playlist
-    if result:
-        playlistData = sp.playlist(playlistId)
-        playlistUrl = safe_get(playlistData, 'external_urls', 'spotify')
-        return playlistUrl
-    return ''
-
-def get_spotify_uri(playlistId):
-    return f"spotify:playlist:{playlistId}"
-
-
-# This endpoint doesn't work yet
-def get_songwriter_data(songwriterId, accessToken):
-    parameters = {"id": songwriterId}
-    headers = {"Authorization": "Bearer {}".format(accessToken)}
-    response = requests.get("https://api.spotify.com/v1/songwriter/", headers=headers, params=parameters)
-    data = response.json()
-    print(type(data))
-    print(data)
-    return []
-
-# This endpoint doesn't work yet
-def get_producer_data(producerId, accessToken):
-    parameters = {"id": producerId}
-    headers = {"Authorization": "Bearer {}".format(accessToken)}
-    response = requests.get("https://api.spotify.com/v1/producer/", headers=headers, params=parameters)
-    data = response.json()
-    print(type(data))
-    print(data)
-    return []
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)

@@ -27,6 +27,8 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
   const [playlistUrl, setPlaylistUrl] = useState('');
   // set concert to Setlistify
   const [concertId, setConcertId] = useState('');
+  // resolved setlist.fm artist MBID — ensures exact artist match when building playlists
+  const [artistMbid, setArtistMbid] = useState('');
 
   const handleCreatePlaylist = (playlistType) => (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -38,6 +40,7 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
       playlistType: playlistType,
       token: token,
       playlistId: concertId,
+      artistMbid: artistMbid,
     });
     fetch(`${fetchUrl()}/buildPlaylist`, {
       method: 'POST',
@@ -59,6 +62,7 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
         setPlaylistUrl={setPlaylistUrl}
         token={token}
         setConcertId={setConcertId}
+        setArtistMbid={setArtistMbid}
       />
       <PlaylistBuilderButtons
         artistSelected={!!selectedArtist.name && !!concertId}
