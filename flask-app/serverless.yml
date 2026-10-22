@@ -30,7 +30,6 @@ provider:
     SETLIST_FM_API_KEY: ${env:SETLIST_FM_API_KEY}
     APP_SECRET_KEY: ${env:APP_SECRET_KEY}
     REDIRECT_URI: ${env:REDIRECT_URI}
-    SCOPE: ${env:SCOPE}
     IS_OFFLINE: ${env:IS_OFFLINE, 'false'}
 
 functions:
