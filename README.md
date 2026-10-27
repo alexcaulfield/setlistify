@@ -8,10 +8,9 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 ### Tech Stack
 
 * **Frontend**: TypeScript, React 16, React Router v5, Semantic UI React (`semantic-ui-react`)
-* **Backend**: Python 3.11, Flask, Spotipy (Spotify API wrapper), Repertorio (Setlist.fm API wrapper), PyJWT
-* **Infrastructure & Hosting**:
-  * Frontend: Netlify (`yarn build` -> `build/`)
-  * Backend: AWS Lambda & API Gateway deployed via Serverless Framework (`serverless-wsgi` + `serverless-python-requirements`)
+* **Backend**: Go (Serverless Functions on Vercel), Spotify Web API (`zmb3/spotify/v2`), Setlist.fm API, HS256 JWT auth
+* **Infrastructure & Hosting**: Vercel (monorepo hosting React static build + Go serverless functions in `/api`)
+* **Legacy Backend (Archived)**: Python 3.11, Flask, AWS Lambda + API Gateway (Serverless Framework)
 
 ### Current Features
 * Autocomplete for artists
@@ -27,17 +26,47 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 
 ## Running Locally
 
-This project has two parts: a React frontend and a Flask backend. Both need to be running simultaneously.
+This project consists of a React frontend (`src/`) and a Go backend (`api/` + `cmd/devserver`). Both run concurrently during local development.
 
 ### Prerequisites
 
 * **Node.js 22** — run `nvm use` in the repo root to switch automatically (uses `.nvmrc`)
 * **Yarn 4** (configured via `.yarnrc.yml` and `packageManager`)
-* **Python 3.7+**
+* **Go 1.22+**
 * A [Spotify Developer](https://developer.spotify.com/dashboard) app (for `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`)
 * A [Setlist.fm API](https://api.setlist.fm/docs/1.0/index.html) key
 
-### 1. Frontend (React)
+---
+
+### Environment Setup
+
+Create a `.env` file in the repo root (or inside `flask-app/`):
+
+```bash
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+SETLIST_FM_API_KEY=your_setlistfm_api_key
+APP_SECRET_KEY=any_random_secret_string_min_32_chars
+REDIRECT_URI=http://localhost:3000/callback
+```
+
+---
+
+### 1. Backend (Go Dev Server)
+
+Run the local Go dev server, which serves `/api/*` endpoints on `:5000`:
+
+```bash
+go run ./cmd/devserver
+```
+
+> **Note on macOS AirPlay receiver:** macOS Monterey+ binds AirPlay Receiver to port 5000 by default. If port 5000 is taken, either turn off *System Settings > General > AirDrop & Handoff > AirPlay Receiver*, or run the dev server on another port: `PORT=5001 go run ./cmd/devserver`.
+
+---
+
+### 2. Frontend (React)
+
+In a separate terminal, start the Create React App development server:
 
 ```bash
 nvm use          # switches to Node 22 per .nvmrc
@@ -45,40 +74,25 @@ yarn install
 yarn start        # runs on http://localhost:3000
 ```
 
-> The React app proxies API requests to `http://localhost:5000` (the Flask backend).
+> The React dev server automatically proxies `/api/*` requests to `http://localhost:5000` via `"proxy": "http://localhost:5000"` in `package.json`.
 
-### 2. Backend (Flask)
+---
 
-```bash
-cd flask-app
-
-# Create a virtual environment and install dependencies
-python3 -m venv venv
-source venv/bin/activate # or for fish, set VIRTUAL_ENV "/Users/alexcaulfield/src/setlistify/venv"
-pip3 install -r requirements.txt
-```
-
-Create a `.env` file inside `flask-app/`:
-
-```
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-SETLIST_FM_API_KEY=your_setlistfm_api_key
-APP_SECRET_KEY=any_random_secret_string
-REDIRECT_URI=https://setlistify.app/callback
-```
-
-Then start the Flask server:
-
-```bash
-IS_OFFLINE=true python app.py
-```
-
-The backend will be available at `http://localhost:5000`.
-
-### 3. Open the app
+### 3. Open the App
 
 Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+### Running Tests
+
+```bash
+# Run Go backend tests
+go test -v ./...
+
+# Run frontend tests
+yarn test --watchAll=false
+```
 
 ## Production deploy
 
