@@ -4,13 +4,12 @@ import {fetchUrl} from "../utils/dev_env";
 
 interface LoginHandlerProps {
   handleLogin: () => void,
-  setUser: (object) => void,
-  setToken: (string) => void,
-  cachePath: string,
+  setUser: (object: any) => void,
+  setToken: (token: string) => void,
 }
 
 const getUrlParams = () => {
-  const vars = {code: ''};
+  const vars: { [key: string]: string } = {code: ''};
   window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (substring, key, value) => {
     vars[key] = value;
     return vars.toString();
@@ -18,13 +17,12 @@ const getUrlParams = () => {
   return vars;
 };
 
-const LoginHandler = ({handleLogin, setUser, setToken, cachePath}: LoginHandlerProps) => {
+const LoginHandler = ({handleLogin, setUser, setToken}: LoginHandlerProps) => {
   useEffect(() => {
     const params = getUrlParams();
     if (params?.code) {
       const body = JSON.stringify({
         code: params.code,
-        cache_path: cachePath,
       });
       fetch(`${fetchUrl()}/getUser`, {
         method: 'POST',
@@ -37,7 +35,7 @@ const LoginHandler = ({handleLogin, setUser, setToken, cachePath}: LoginHandlerP
           handleLogin();
         });
     }
-  }, [cachePath]);
+  }, []);
 
   return (
     <>
