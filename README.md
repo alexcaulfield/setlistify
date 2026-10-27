@@ -91,8 +91,7 @@ env | xargs) && npx serverless deploy`
 
 ```text
 setlistify-app/
-├── .agents/                  # Agent rules and skills
-│   ├── rules/                # Project coding standards
+├── .agents/                  # Agent skills
 │   └── skills -> ~/Documents/develop/.agents/skills
 ├── flask-app/                # Python Flask backend & Serverless config
 │   ├── app.py                # Flask routes and API entry point

@@ -105,8 +105,6 @@ Because artist names on Spotify and Setlist.fm can collide across multiple acts 
 ```text
 setlistify-app/
 ├── .agents/
-│   ├── rules/
-│   │   └── coding-standards.md        # Project-wide agent rules
 │   └── skills -> ~/Documents/develop/.agents/skills # Symlink to shared skills repo
 ├── .github/
 │   └── workflows/                     # GitHub Actions CI workflows
