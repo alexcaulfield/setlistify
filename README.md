@@ -32,7 +32,7 @@ This project has two parts: a React frontend and a Flask backend. Both need to b
 ### Prerequisites
 
 * **Node.js 22** — run `nvm use` in the repo root to switch automatically (uses `.nvmrc`)
-* **npm** (use npm, not yarn — the project's `package-lock.json` is the authoritative lock file)
+* **Yarn 4** (configured via `.yarnrc.yml` and `packageManager`)
 * **Python 3.7+**
 * A [Spotify Developer](https://developer.spotify.com/dashboard) app (for `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`)
 * A [Setlist.fm API](https://api.setlist.fm/docs/1.0/index.html) key
@@ -41,8 +41,8 @@ This project has two parts: a React frontend and a Flask backend. Both need to b
 
 ```bash
 nvm use          # switches to Node 22 per .nvmrc
-npm install
-npm start        # runs on http://localhost:3000
+yarn install
+yarn start        # runs on http://localhost:3000
 ```
 
 > The React app proxies API requests to `http://localhost:5000` (the Flask backend).
