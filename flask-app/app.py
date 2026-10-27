@@ -1,11 +1,11 @@
 import os
-import uuid
 import traceback
 from flask import Flask, session, request, jsonify
 from flask_cors import CORS, cross_origin
 from flask_session import Session
 import jwt
 import spotipy
+from spotipy.cache_handler import MemoryCacheHandler
 from repertorio import Repertorio
 
 from config import (
@@ -14,6 +14,7 @@ from config import (
     REDIRECT_URI,
     SCOPE,
     SETLIST_FM_API_KEY,
+    SHOW_DIALOG,
     SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET,
 )
@@ -56,14 +57,18 @@ def handle_exception(e):
 @app.route("/authUrl")
 @cross_origin(origins=['https://www.setlistify.app', 'https://setlistify.app', 'http://localhost:3000'])
 def verify():
-    cache_dir = '/tmp/.cache' if not IS_OFFLINE else '.cache'
-    os.makedirs(cache_dir, exist_ok=True)
-    cache_path = f'{cache_dir}/.spotipyoauthcache{uuid.uuid4()}'
-    auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=cache_path)
+    auth_manager = spotipy.oauth2.SpotifyOAuth(
+        SPOTIFY_CLIENT_ID,
+        SPOTIFY_CLIENT_SECRET,
+        REDIRECT_URI,
+        scope=SCOPE,
+        show_dialog=SHOW_DIALOG,
+        cache_handler=MemoryCacheHandler(),
+    )
     authUrl = auth_manager.get_authorize_url()
     return jsonify({
         'authUrl': authUrl,
-        'cachePath':cache_path
+        'cachePath': ''
     })
 
 # authorization-code-flow Step 2.
@@ -76,11 +81,15 @@ def verify():
 def get_user():
     session.clear()
     code = request.json.get('code')
-    cache_path = request.json.get('cache_path')
-    print(cache_path)
 
-    auth_manager = spotipy.oauth2.SpotifyOAuth(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI, scope=SCOPE, cache_path=cache_path)
-    access_token = auth_manager.get_access_token(code)
+    auth_manager = spotipy.oauth2.SpotifyOAuth(
+        SPOTIFY_CLIENT_ID,
+        SPOTIFY_CLIENT_SECRET,
+        REDIRECT_URI,
+        scope=SCOPE,
+        cache_handler=MemoryCacheHandler(),
+    )
+    access_token = auth_manager.get_access_token(code, as_dict=True, check_cache=False)
     encoded_access_token = jwt.encode(access_token, APP_SECRET_KEY, algorithm='HS256')
 
     spotify = spotipy.Spotify(auth=access_token.get('access_token'))
