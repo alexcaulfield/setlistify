@@ -111,7 +111,6 @@ setlistify-app/
 │   ├── App.tsx               # Root application layout & state
 │   └── index.tsx             # React DOM entry point
 ├── ARCHITECTURE.md           # System design and architectural patterns
-├── DESIGN_SYSTEM.md          # UI tokens, typography, and component patterns
 ├── netlify.toml              # Netlify build configuration
 ├── package.json              # Frontend dependencies and scripts
 └── tsconfig.json             # TypeScript compiler configuration

@@ -147,7 +147,6 @@ setlistify-app/
 │   ├── index.css                      # Global typography and body resets
 │   └── index.tsx                      # React mounting entry point
 ├── ARCHITECTURE.md
-├── DESIGN_SYSTEM.md
 ├── README.md
 ├── netlify.toml
 ├── package.json

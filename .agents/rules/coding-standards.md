@@ -13,7 +13,7 @@ description: Core coding standards, architecture boundaries, and workflow conven
 ## 2. Frontend Conventions (React & TypeScript)
 - **Component Style**: Write functional React components using Hooks (`useState`, `useEffect`, `useHistory`).
 - **File Naming**: Use `snake_case.tsx` for component and utility files under `src/components/` and `src/utils/` (matching existing files like `create_playlist_container.tsx`, `search_container.tsx`, `dev_env.ts`).
-- **UI Components**: Use `semantic-ui-react` components (`Container`, `Card`, `Button`, `Dropdown`, `Icon`, `Image`) consistent with `DESIGN_SYSTEM.md`.
+- **UI Components**: Use `semantic-ui-react` components (`Container`, `Card`, `Button`, `Dropdown`, `Icon`, `Image`).
 - **API Requests**: Always construct backend URLs using `fetchUrl()` from `src/utils/dev_env.ts` so requests automatically use the local dev proxy (`REACT_APP_ENV=dev`) in development and the AWS API Gateway endpoint in production.
 
 ## 3. Backend Conventions (Python & Flask)
