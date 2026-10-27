@@ -5,18 +5,13 @@ Live at setlistify.app!
 
 A platform for you to prep for concerts - find an artist you're seeing soon, and add their most recently played songs live to a Spotify playlist
 
-### Technologies used
-* TypeScript
-* React
-* Python
-  * Flask
-* Semantic UI
-* Spotify API
-  * Spotipy - Spotify Python Wrapper
-* Setlist FM API
-  * Repertorio - Setlist.fm Python Wrapper
-* Serverless
-* AWS Lambda
+### Tech Stack
+
+* **Frontend**: TypeScript, React 16, React Router v5, Semantic UI React (`semantic-ui-react`)
+* **Backend**: Python 3.11, Flask, Spotipy (Spotify API wrapper), Repertorio (Setlist.fm API wrapper), PyJWT
+* **Infrastructure & Hosting**:
+  * Frontend: Netlify (`yarn build` -> `build/`)
+  * Backend: AWS Lambda & API Gateway deployed via Serverless Framework (`serverless-wsgi` + `serverless-python-requirements`)
 
 ### Current Features
 * Autocomplete for artists
@@ -37,7 +32,7 @@ This project has two parts: a React frontend and a Flask backend. Both need to b
 ### Prerequisites
 
 * **Node.js 22** — run `nvm use` in the repo root to switch automatically (uses `.nvmrc`)
-* **npm** (use npm, not yarn — the project's `package-lock.json` is the authoritative lock file)
+* **Yarn 4** (configured via `.yarnrc.yml` and `packageManager`)
 * **Python 3.7+**
 * A [Spotify Developer](https://developer.spotify.com/dashboard) app (for `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`)
 * A [Setlist.fm API](https://api.setlist.fm/docs/1.0/index.html) key
@@ -46,8 +41,8 @@ This project has two parts: a React frontend and a Flask backend. Both need to b
 
 ```bash
 nvm use          # switches to Node 22 per .nvmrc
-npm install
-npm start        # runs on http://localhost:3000
+yarn install
+yarn start        # runs on http://localhost:3000
 ```
 
 > The React app proxies API requests to `http://localhost:5000` (the Flask backend).
@@ -94,6 +89,36 @@ for line in (cat .env | string match -v '^#*' | string match -v '^$')
     set -gx (string split -m 1 = $line)
 end
 npx serverless deploy
+```
+
+---
+
+## Project Structure
+
+```text
+setlistify-app/
+├── .agents/                  # Agent skills
+│   └── skills -> ~/Documents/develop/.agents/skills
+├── flask-app/                # Python Flask backend & Serverless config
+│   ├── app.py                # Flask routes and API entry point
+│   ├── config.py             # Environment variable loading & constants
+│   ├── setlist_helpers.py    # Setlist.fm data parsing & normalization
+│   ├── spotify_helpers.py    # Spotify track resolution & playlist creation
+│   ├── requirements.txt      # Python dependencies
+│   ├── serverless.yml        # AWS Lambda + WSGI Serverless deployment config
+│   └── package.json          # Serverless plugins
+├── plans/                    # Approved architectural and feature plans
+├── public/                   # Static HTML template, icons, and web manifest
+├── src/                      # React + TypeScript frontend source
+│   ├── components/           # UI & routing components
+│   ├── img/                  # Static image assets
+│   ├── utils/                # Environment helpers (dev_env.ts)
+│   ├── App.tsx               # Root application layout & state
+│   └── index.tsx             # React DOM entry point
+├── ARCHITECTURE.md           # System design and architectural patterns
+├── netlify.toml              # Netlify build configuration
+├── package.json              # Frontend dependencies and scripts
+└── tsconfig.json             # TypeScript compiler configuration
 ```
 
 ---
