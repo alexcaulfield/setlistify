@@ -40,7 +40,7 @@ This project consists of a React frontend (`src/`) and a Go backend (`api/` + `c
 
 ### Environment Setup
 
-Create a `.env` file in the repo root (or inside `flask-app/`):
+Create a `.env` file in the repo root:
 
 ```bash
 SPOTIFY_CLIENT_ID=your_spotify_client_id
@@ -54,13 +54,11 @@ REDIRECT_URI=http://localhost:3000/callback
 
 ### 1. Backend (Go Dev Server)
 
-Run the local Go dev server, which serves `/api/*` endpoints on `:5000`:
+Run the local Go dev server, which serves `/api/*` endpoints on `:5001`:
 
 ```bash
 go run ./cmd/devserver
 ```
-
-> **Note on macOS AirPlay receiver:** macOS Monterey+ binds AirPlay Receiver to port 5000 by default. If port 5000 is taken, either turn off *System Settings > General > AirDrop & Handoff > AirPlay Receiver*, or run the dev server on another port: `PORT=5001 go run ./cmd/devserver`.
 
 ---
 
@@ -74,7 +72,7 @@ yarn install
 yarn start        # runs on http://localhost:3000
 ```
 
-> The React dev server automatically proxies `/api/*` requests to `http://localhost:5000` via `"proxy": "http://localhost:5000"` in `package.json`.
+> The React dev server automatically proxies `/api/*` requests to `http://localhost:5001` via `"proxy": "http://localhost:5001"` in `package.json`.
 
 ---
 

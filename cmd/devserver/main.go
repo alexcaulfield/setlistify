@@ -33,7 +33,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "5000"
+		port = "5001"
 	}
 
 	log.Printf("Starting Setlistify Go dev server on :%s ...", port)
