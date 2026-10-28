@@ -18,7 +18,7 @@ type Config struct {
 func Load() Config {
 	isOffline := strings.EqualFold(os.Getenv("IS_OFFLINE"), "true") || os.Getenv("IS_OFFLINE") == "1"
 	redirectURI := os.Getenv("REDIRECT_URI")
-	if redirectURI == "" {
+	if redirectURI == "" || (isOffline && strings.Contains(redirectURI, "setlistify.app")) {
 		if isOffline {
 			redirectURI = "http://127.0.0.1:3000/callback"
 		} else {

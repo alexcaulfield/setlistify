@@ -47,8 +47,10 @@ SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 SETLIST_FM_API_KEY=your_setlistfm_api_key
 APP_SECRET_KEY=any_random_secret_string_min_32_chars
-REDIRECT_URI=http://localhost:3000/callback
+REDIRECT_URI=http://127.0.0.1:3000/callback
 ```
+
+> **Note on Spotify Redirect URI:** Spotify strictly requires HTTPS for domains, but allows HTTP for literal loopback IP addresses. In the Spotify Developer Dashboard, register `http://127.0.0.1:3000/callback` (not `localhost`).
 
 ---
 

@@ -14,6 +14,11 @@ func main() {
 	_ = godotenv.Load(".env")
 	_ = godotenv.Load("flask-app/.env")
 
+	// Ensure local dev environment is recognized as offline/local
+	if os.Getenv("IS_OFFLINE") == "" {
+		_ = os.Setenv("IS_OFFLINE", "true")
+	}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/authUrl", handler.AuthUrl)
