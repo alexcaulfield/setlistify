@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/alexcaulfield/setlistify/internal/auth"
 	"github.com/alexcaulfield/setlistify/internal/config"
@@ -57,14 +58,14 @@ func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 	spotifyCli := spotifyclient.New(oauth2.NewClient(ctx, oauth2.StaticTokenSource(oauthToken)))
 	setlistCli := setlistfm.NewClient(cfg.SetlistFMAPIKey)
 
-	var songs []string
+	var songs []setlistfm.Song
 	playlistTitle := fmt.Sprintf("%s's Setlist", req.ArtistName)
 
 	if req.PlaylistType == "Setlist" || req.PlaylistType == "" {
 		// Fetch the setlist directly by ID
 		setlist, err := setlistCli.GetSetlist(ctx, req.PlaylistID)
 		if err == nil && setlist != nil {
-			songs = setlistfm.ExtractSongNames(setlist)
+			songs = setlistfm.ExtractSongs(setlist)
 			if setlist.EventDate != "" {
 				playlistTitle = fmt.Sprintf("%s's Setlist from %s", req.ArtistName, setlist.EventDate)
 			}
@@ -84,7 +85,7 @@ func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 			}
 			picked := setlistfm.PickSetlistByID(candidateSetlists, req.PlaylistID)
 			if picked != nil {
-				songs = setlistfm.ExtractSongNames(picked)
+				songs = setlistfm.ExtractSongs(picked)
 				if picked.EventDate != "" {
 					playlistTitle = fmt.Sprintf("%s's Setlist from %s", req.ArtistName, picked.EventDate)
 				}
@@ -97,8 +98,20 @@ func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	songQueries := make([]spotify.SongQuery, len(songs))
+	for i, s := range songs {
+		var coverArtist string
+		if s.Cover != nil && strings.TrimSpace(s.Cover.Name) != "" {
+			coverArtist = strings.TrimSpace(s.Cover.Name)
+		}
+		songQueries[i] = spotify.SongQuery{
+			Name:        s.Name,
+			CoverArtist: coverArtist,
+		}
+	}
+
 	// Resolve Spotify track IDs concurrently (concurrency limit = 5)
-	trackIDs, err := spotify.ResolveTrackIDs(ctx, spotifyCli, req.ArtistName, songs, 5)
+	trackIDs, err := spotify.ResolveTrackIDs(ctx, spotifyCli, req.ArtistName, songQueries, 5)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err, "SpotifyResolutionError")
 		return

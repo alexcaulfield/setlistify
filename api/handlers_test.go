@@ -69,3 +69,38 @@ func TestArtistSetlistsInvalidJSON(t *testing.T) {
 	}
 }
 
+func TestBuildPlaylistMethodNotAllowed(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/buildPlaylist", nil)
+	rec := httptest.NewRecorder()
+
+	BuildPlaylist(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected 405 Method Not Allowed, got %d", rec.Code)
+	}
+}
+
+func TestBuildPlaylistInvalidJSON(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/api/buildPlaylist", strings.NewReader("not-json"))
+	rec := httptest.NewRecorder()
+
+	BuildPlaylist(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 Bad Request, got %d", rec.Code)
+	}
+}
+
+func TestBuildPlaylistInvalidToken(t *testing.T) {
+	os.Setenv("APP_SECRET_KEY", "dummy_app_secret_key_long_enough_123")
+	body := `{"token":"invalid-jwt-token","artistName":"Lawrence","playlistType":"Setlist","playlistId":"123"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/buildPlaylist", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+
+	BuildPlaylist(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized, got %d (body: %s)", rec.Code, rec.Body.String())
+	}
+}
+

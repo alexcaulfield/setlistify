@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-// ExtractSongNames returns a flat slice of song names from all sets and encores.
+// ExtractSongNames returns a flat slice of song names from all sets and encores,
+// excluding tape/intro tracks.
 func ExtractSongNames(s *Setlist) []string {
 	if s == nil {
 		return nil
@@ -14,6 +15,9 @@ func ExtractSongNames(s *Setlist) []string {
 	var songs []string
 	for _, st := range s.Sets.Set {
 		for _, sng := range st.Song {
+			if sng.Tape {
+				continue
+			}
 			trimmed := strings.TrimSpace(sng.Name)
 			if trimmed != "" {
 				songs = append(songs, trimmed)
@@ -23,7 +27,44 @@ func ExtractSongNames(s *Setlist) []string {
 	return songs
 }
 
-// SetlistHasSongs checks whether a setlist contains at least one song.
+// ExtractSongs returns a flat slice of songs from all sets and encores,
+// excluding tape/intro tracks and empty song names. Song names are trimmed,
+// and Cover artist information is preserved when present.
+func ExtractSongs(s *Setlist) []Song {
+	if s == nil {
+		return nil
+	}
+	var songs []Song
+	for _, st := range s.Sets.Set {
+		for _, sng := range st.Song {
+			if sng.Tape {
+				continue
+			}
+			trimmed := strings.TrimSpace(sng.Name)
+			if trimmed == "" {
+				continue
+			}
+			sngCopy := sng
+			sngCopy.Name = trimmed
+			if sngCopy.Cover != nil {
+				coverName := strings.TrimSpace(sngCopy.Cover.Name)
+				coverMBID := strings.TrimSpace(sngCopy.Cover.MBID)
+				if coverName == "" && coverMBID == "" {
+					sngCopy.Cover = nil
+				} else {
+					cCopy := *sngCopy.Cover
+					cCopy.Name = coverName
+					cCopy.MBID = coverMBID
+					sngCopy.Cover = &cCopy
+				}
+			}
+			songs = append(songs, sngCopy)
+		}
+	}
+	return songs
+}
+
+// SetlistHasSongs checks whether a setlist contains at least one non-tape song.
 func SetlistHasSongs(s *Setlist) bool {
 	if s == nil {
 		return false
@@ -31,6 +72,9 @@ func SetlistHasSongs(s *Setlist) bool {
 	for _, st := range s.Sets.Set {
 		if len(st.Song) > 0 {
 			for _, sng := range st.Song {
+				if sng.Tape {
+					continue
+				}
 				if strings.TrimSpace(sng.Name) != "" {
 					return true
 				}
