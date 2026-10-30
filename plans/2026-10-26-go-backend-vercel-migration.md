@@ -1,7 +1,7 @@
 # Plan: Refactor Backend to Go Serverless Functions and Migrate to Vercel
 
 - **Date:** 2026-10-26
-- **Status:** proposed
+- **Status:** approved
 
 ## 1. Overview
 

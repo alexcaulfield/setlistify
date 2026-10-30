@@ -38,8 +38,7 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:5000",
-  "homepage": ".",
+  "proxy": "http://localhost:5001",
   "packageManager": "yarn@4.17.0",
   "resolutions": {
     "@types/react": "^16.14.43",
