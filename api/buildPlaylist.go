@@ -104,7 +104,7 @@ func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playlistDesc := fmt.Sprintf("Created by Setlistify for %s", req.ArtistName)
+	playlistDesc := "A playlist made with the setlistify.app"
 	playlist, err := spotify.CreateAndPopulatePlaylist(ctx, spotifyCli, playlistTitle, playlistDesc, trackIDs)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err, "SpotifyCreatePlaylistError")
@@ -115,4 +115,3 @@ func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 		PlaylistURI: string(playlist.URI),
 	})
 }
-

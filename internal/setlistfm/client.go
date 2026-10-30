@@ -96,7 +96,7 @@ func (c *Client) SearchArtists(ctx context.Context, artistName string, page int)
 	q := url.Values{
 		"artistName": {artistName},
 		"p":          {fmt.Sprintf("%d", page)},
-		"sort":       {"sortName"},
+		"sort":       {"relevance"},
 	}
 
 	var res ArtistsResponse

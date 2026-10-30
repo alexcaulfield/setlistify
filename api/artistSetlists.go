@@ -120,15 +120,31 @@ func ArtistSetlists(w http.ResponseWriter, r *http.Request) {
 		// Fallback: search setlists directly by artist name
 		searchRes, err := client.SearchSetlistsByArtist(ctx, req.ArtistName, 1)
 		if err == nil && searchRes != nil && len(searchRes.Setlist) > 0 {
+			var exact []setlistfm.Setlist
 			var filtered []setlistfm.Setlist
 			for _, s := range searchRes.Setlist {
-				if strings.Contains(strings.ToLower(s.Artist.Name), normalizedName) {
+				artistNameLower := strings.ToLower(strings.TrimSpace(s.Artist.Name))
+				if artistNameLower == normalizedName {
+					exact = append(exact, s)
+				} else if strings.Contains(artistNameLower, normalizedName) {
 					filtered = append(filtered, s)
 				}
 			}
+			if len(exact) > 0 {
+				_ = httputil.WriteJSON(w, http.StatusOK, artistSetlistsResponse{
+					ArtistSetlists: exact,
+					ArtistMbid:     exact[0].Artist.MBID,
+				})
+				return
+			}
 			if len(filtered) > 0 {
+				var fallbackMBID string
+				if filtered[0].Artist.MBID != "" {
+					fallbackMBID = filtered[0].Artist.MBID
+				}
 				_ = httputil.WriteJSON(w, http.StatusOK, artistSetlistsResponse{
 					ArtistSetlists: filtered,
+					ArtistMbid:     fallbackMBID,
 				})
 				return
 			}

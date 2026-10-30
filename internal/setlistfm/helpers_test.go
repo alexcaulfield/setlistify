@@ -115,3 +115,36 @@ func TestResolveArtistSetlists(t *testing.T) {
 		t.Fatalf("expected 1 setlist with ID set-1, got %+v", setlists)
 	}
 }
+
+func TestSearchArtistsSortRelevance(t *testing.T) {
+	var capturedSort string
+	transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		rec := httptest.NewRecorder()
+		rec.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/search/artists" {
+			capturedSort = r.URL.Query().Get("sort")
+			resp := ArtistsResponse{
+				Artist: []Artist{
+					{MBID: "mbid-lawrence", Name: "Lawrence"},
+				},
+			}
+			json.NewEncoder(rec).Encode(resp)
+		} else {
+			rec.WriteHeader(http.StatusNotFound)
+		}
+		return rec.Result(), nil
+	})
+
+	httpClient := &http.Client{Transport: transport}
+	client := NewClient("dummy-key", WithBaseURL("http://setlistfm.mock"), WithHTTPClient(httpClient))
+	res, err := client.SearchArtists(context.Background(), "Lawrence", 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedSort != "relevance" {
+		t.Errorf("expected sort to be 'relevance', got %q", capturedSort)
+	}
+	if len(res.Artist) != 1 || res.Artist[0].MBID != "mbid-lawrence" {
+		t.Errorf("unexpected artists response: %+v", res)
+	}
+}
