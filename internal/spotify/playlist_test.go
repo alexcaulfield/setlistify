@@ -23,20 +23,31 @@ func TestResolveTrackIDs(t *testing.T) {
 	transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		q := r.URL.Query().Get("q")
 		var trackID string
+		var artistName string
+
 		switch q {
 		// 1. Original song by performing artist
 		case "artist:Lawrence track:Don't Lose Sight":
 			trackID = "track_dont_lose_sight"
+			artistName = "Lawrence"
 
-		// 2. Cover song recorded by performing artist
+		// 2. Cover song where performing artist search returns an unrelated artist with same surname (e.g. Tracy Lawrence),
+		// which should be rejected, falling back to original artist (The Beatles)
 		case "artist:Lawrence track:Get Back":
-			trackID = "track_lawrence_get_back"
+			trackID = "track_tracy_lawrence_getting_back_up"
+			artistName = "Tracy Lawrence"
+		case "artist:The Beatles track:Get Back":
+			trackID = "track_beatles_get_back"
+			artistName = "The Beatles"
 
-		// 3. Cover song NOT recorded by performing artist; falls back to original artist
+		// 3. Cover song where performing artist search returns an unrelated artist with same surname (e.g. Tim Lawrence),
+		// which should be rejected, falling back to original artist (Britney Spears)
 		case "artist:Lawrence track:Toxic":
-			trackID = "" // not recorded by Lawrence
+			trackID = "track_tim_lawrence_toxic"
+			artistName = "Tim Lawrence"
 		case "artist:Britney Spears track:Toxic":
 			trackID = "track_britney_toxic"
+			artistName = "Britney Spears"
 
 		// 4. Cover song that misses strict searches, falls back to loose cover artist query
 		case "artist:Lawrence track:Superstition":
@@ -45,6 +56,7 @@ func TestResolveTrackIDs(t *testing.T) {
 			trackID = ""
 		case "Stevie Wonder Superstition":
 			trackID = "track_stevie_superstition"
+			artistName = "Stevie Wonder"
 
 		// 5. Unknown song that never resolves
 		case "artist:Lawrence track:Unknown Song", "Lawrence Unknown Song":
@@ -54,19 +66,34 @@ func TestResolveTrackIDs(t *testing.T) {
 		res := struct {
 			Tracks struct {
 				Items []struct {
-					ID   string `json:"id"`
-					Name string `json:"name"`
+					ID      string `json:"id"`
+					Name    string `json:"name"`
+					Artists []struct {
+						Name string `json:"name"`
+					} `json:"artists"`
 				} `json:"items"`
 			} `json:"tracks"`
 		}{}
 
 		if trackID != "" {
-			res.Tracks.Items = []struct {
-				ID   string `json:"id"`
-				Name string `json:"name"`
+			item := struct {
+				ID      string `json:"id"`
+				Name    string `json:"name"`
+				Artists []struct {
+					Name string `json:"name"`
+				} `json:"artists"`
 			}{
-				{ID: trackID, Name: trackID},
+				ID:   trackID,
+				Name: trackID,
 			}
+			if artistName != "" {
+				item.Artists = []struct {
+					Name string `json:"name"`
+				}{
+					{Name: artistName},
+				}
+			}
+			res.Tracks.Items = append(res.Tracks.Items, item)
 		}
 
 		bodyBytes, _ := json.Marshal(res)
@@ -99,7 +126,7 @@ func TestResolveTrackIDs(t *testing.T) {
 
 	expectedIDs := []spotifyclient.ID{
 		"track_dont_lose_sight",
-		"track_lawrence_get_back",
+		"track_beatles_get_back",
 		"track_britney_toxic",
 		"track_stevie_superstition",
 	}
@@ -112,6 +139,92 @@ func TestResolveTrackIDs(t *testing.T) {
 		if trackIDs[i] != exp {
 			t.Errorf("trackID[%d]: expected %q, got %q", i, exp, trackIDs[i])
 		}
+	}
+}
+
+func TestTrackMatchesArtist(t *testing.T) {
+	tests := []struct {
+		name           string
+		trackArtists   []string
+		expectedArtist string
+		want           bool
+	}{
+		{
+			name:           "exact match",
+			trackArtists:   []string{"Lawrence"},
+			expectedArtist: "Lawrence",
+			want:           true,
+		},
+		{
+			name:           "case insensitive match",
+			trackArtists:   []string{"lawrence"},
+			expectedArtist: "Lawrence",
+			want:           true,
+		},
+		{
+			name:           "reject different artist containing name",
+			trackArtists:   []string{"Tim Lawrence"},
+			expectedArtist: "Lawrence",
+			want:           false,
+		},
+		{
+			name:           "reject another different artist containing name",
+			trackArtists:   []string{"Tracy Lawrence"},
+			expectedArtist: "Lawrence",
+			want:           false,
+		},
+		{
+			name:           "the prefix match",
+			trackArtists:   []string{"The Beatles"},
+			expectedArtist: "Beatles",
+			want:           true,
+		},
+		{
+			name:           "the prefix reverse match",
+			trackArtists:   []string{"Beatles"},
+			expectedArtist: "The Beatles",
+			want:           true,
+		},
+		{
+			name:           "collaboration contains expected artist",
+			trackArtists:   []string{"Lawrence", "Brasstracks"},
+			expectedArtist: "Lawrence",
+			want:           true,
+		},
+		{
+			name:           "collaboration does not contain expected artist",
+			trackArtists:   []string{"Tracy Lawrence", "Friends"},
+			expectedArtist: "Lawrence",
+			want:           false,
+		},
+		{
+			name:           "nil track",
+			trackArtists:   nil,
+			expectedArtist: "Lawrence",
+			want:           false,
+		},
+		{
+			name:           "empty expected artist",
+			trackArtists:   []string{"Lawrence"},
+			expectedArtist: "",
+			want:           true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var track *spotifyclient.FullTrack
+			if tc.trackArtists != nil {
+				track = &spotifyclient.FullTrack{}
+				for _, a := range tc.trackArtists {
+					track.Artists = append(track.Artists, spotifyclient.SimpleArtist{Name: a})
+				}
+			}
+			got := TrackMatchesArtist(track, tc.expectedArtist)
+			if got != tc.want {
+				t.Errorf("TrackMatchesArtist() = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }
 

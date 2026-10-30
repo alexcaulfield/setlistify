@@ -15,15 +15,48 @@ type SongQuery struct {
 	CoverArtist string
 }
 
-func searchFirstTrack(ctx context.Context, client *spotifyclient.Client, query string) (*spotifyclient.FullTrack, error) {
+// TrackMatchesArtist checks if any artist on the track matches expectedArtist
+// (case-insensitive, ignoring optional leading "The " or "the ").
+func TrackMatchesArtist(track *spotifyclient.FullTrack, expectedArtist string) bool {
+	if track == nil {
+		return false
+	}
+	trimmedExpected := strings.TrimSpace(expectedArtist)
+	if trimmedExpected == "" {
+		return true
+	}
+	expectedNorm := strings.TrimPrefix(strings.ToLower(trimmedExpected), "the ")
+	for _, a := range track.Artists {
+		aName := strings.TrimSpace(a.Name)
+		if strings.EqualFold(aName, trimmedExpected) {
+			return true
+		}
+		if strings.EqualFold(strings.TrimPrefix(strings.ToLower(aName), "the "), expectedNorm) {
+			return true
+		}
+	}
+	return false
+}
+
+func searchFirstMatchingTrack(ctx context.Context, client *spotifyclient.Client, query, expectedArtist string) (*spotifyclient.FullTrack, error) {
 	result, err := client.Search(ctx, query, spotifyclient.SearchTypeTrack)
 	if err != nil {
 		return nil, err
 	}
 	if result.Tracks != nil && len(result.Tracks.Tracks) > 0 {
-		return &result.Tracks.Tracks[0], nil
+		for i := range result.Tracks.Tracks {
+			track := &result.Tracks.Tracks[i]
+			if TrackMatchesArtist(track, expectedArtist) {
+				return track, nil
+			}
+		}
 	}
 	return nil, nil
+}
+
+type queryCandidate struct {
+	query          string
+	expectedArtist string
 }
 
 // SearchTrack searches for a track on Spotify using prioritized queries:
@@ -36,6 +69,9 @@ func searchFirstTrack(ctx context.Context, client *spotifyclient.Client, query s
 // Otherwise (non-cover):
 //  1. "artist:<performingArtist> track:<songName>" (strict)
 //  2. "<performingArtist> <songName>" (unfiltered)
+//
+// In all cases, candidate tracks returned by Spotify are verified to ensure that
+// at least one credited artist on the track matches the expected artist.
 func SearchTrack(ctx context.Context, client *spotifyclient.Client, performingArtist string, song SongQuery) (*spotifyclient.FullTrack, error) {
 	trimmedSong := strings.TrimSpace(song.Name)
 	if trimmedSong == "" {
@@ -46,25 +82,25 @@ func SearchTrack(ctx context.Context, client *spotifyclient.Client, performingAr
 
 	isCover := trimmedCover != "" && !strings.EqualFold(trimmedCover, trimmedPerforming)
 
-	var queries []string
+	var candidates []queryCandidate
 	if isCover {
-		queries = []string{
-			fmt.Sprintf("artist:%s track:%s", trimmedPerforming, trimmedSong),
-			fmt.Sprintf("artist:%s track:%s", trimmedCover, trimmedSong),
-			fmt.Sprintf("%s %s", trimmedCover, trimmedSong),
-			fmt.Sprintf("%s %s", trimmedPerforming, trimmedSong),
+		candidates = []queryCandidate{
+			{query: fmt.Sprintf("artist:%s track:%s", trimmedPerforming, trimmedSong), expectedArtist: trimmedPerforming},
+			{query: fmt.Sprintf("artist:%s track:%s", trimmedCover, trimmedSong), expectedArtist: trimmedCover},
+			{query: fmt.Sprintf("%s %s", trimmedCover, trimmedSong), expectedArtist: trimmedCover},
+			{query: fmt.Sprintf("%s %s", trimmedPerforming, trimmedSong), expectedArtist: trimmedPerforming},
 		}
 	} else {
-		queries = []string{
-			fmt.Sprintf("artist:%s track:%s", trimmedPerforming, trimmedSong),
-			fmt.Sprintf("%s %s", trimmedPerforming, trimmedSong),
+		candidates = []queryCandidate{
+			{query: fmt.Sprintf("artist:%s track:%s", trimmedPerforming, trimmedSong), expectedArtist: trimmedPerforming},
+			{query: fmt.Sprintf("%s %s", trimmedPerforming, trimmedSong), expectedArtist: trimmedPerforming},
 		}
 	}
 
-	for _, q := range queries {
-		track, err := searchFirstTrack(ctx, client, q)
+	for _, c := range candidates {
+		track, err := searchFirstMatchingTrack(ctx, client, c.query, c.expectedArtist)
 		if err != nil {
-			return nil, fmt.Errorf("search track query (%q): %w", q, err)
+			return nil, fmt.Errorf("search track query (%q): %w", c.query, err)
 		}
 		if track != nil {
 			return track, nil
