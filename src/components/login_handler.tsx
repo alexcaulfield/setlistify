@@ -35,6 +35,7 @@ const LoginHandler = ({handleLogin, setUser, setToken}: LoginHandlerProps) => {
           handleLogin();
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
