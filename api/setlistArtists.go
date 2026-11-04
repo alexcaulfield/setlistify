@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/alexcaulfield/setlistify/internal/config"
@@ -18,37 +17,17 @@ type setlistArtistsResponse struct {
 	Artists []setlistfm.Artist `json:"artists"`
 }
 
-// SetlistArtists handles POST /api/setlistArtists
-func SetlistArtists(w http.ResponseWriter, r *http.Request) {
-	if httputil.SetCORS(w, r) {
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		httputil.WriteError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "MethodNotAllowed")
-		return
-	}
-
-	cfg := config.Load()
-
-	var req setlistArtistsRequest
-	if err := httputil.DecodeJSON(r, &req); err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, err, "BadRequest")
-		return
-	}
-
+func searchSetlistArtists(ctx context.Context, cfg *config.Config, req setlistArtistsRequest) (setlistArtistsResponse, error) {
 	if req.ArtistName == "" {
-		_ = httputil.WriteJSON(w, http.StatusOK, setlistArtistsResponse{
+		return setlistArtistsResponse{
 			Artists: []setlistfm.Artist{},
-		})
-		return
+		}, nil
 	}
 
 	client := setlistfm.NewClient(cfg.SetlistFMAPIKey)
-	res, err := client.SearchArtists(context.Background(), req.ArtistName, 1)
+	res, err := client.SearchArtists(ctx, req.ArtistName, 1)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err, "SetlistFmError")
-		return
+		return setlistArtistsResponse{}, httputil.WrapAPIError(http.StatusInternalServerError, "SetlistFmError", err)
 	}
 
 	artists := res.Artist
@@ -56,8 +35,12 @@ func SetlistArtists(w http.ResponseWriter, r *http.Request) {
 		artists = []setlistfm.Artist{}
 	}
 
-	_ = httputil.WriteJSON(w, http.StatusOK, setlistArtistsResponse{
+	return setlistArtistsResponse{
 		Artists: artists,
-	})
+	}, nil
 }
 
+// SetlistArtists handles POST /api/setlistArtists
+func SetlistArtists(w http.ResponseWriter, r *http.Request) {
+	httputil.Handle(http.MethodPost, searchSetlistArtists)(w, r)
+}

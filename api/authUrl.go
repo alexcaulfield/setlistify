@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"errors"
+	"context"
 	"net/http"
 
 	"github.com/alexcaulfield/setlistify/internal/config"
@@ -9,24 +9,26 @@ import (
 	"github.com/alexcaulfield/setlistify/internal/spotify"
 )
 
-// AuthUrl handles GET /api/authUrl
-func AuthUrl(w http.ResponseWriter, r *http.Request) {
-	if httputil.SetCORS(w, r) {
-		return
-	}
-
-	cfg := config.Load()
-	if cfg.SpotifyClientID == "" {
-		httputil.WriteError(w, http.StatusInternalServerError, errors.New("missing Spotify client configuration"), "ConfigError")
-		return
-	}
-
-	svc := spotify.NewService(&cfg)
-	authURL := svc.AuthURL("setlistify-state")
-
-	_ = httputil.WriteJSON(w, http.StatusOK, map[string]string{
-		"authUrl":   authURL,
-		"cachePath": "", // Backwards compatibility for older clients
-	})
+type authUrlResponse struct {
+	AuthURL   string `json:"authUrl"`
+	CachePath string `json:"cachePath"` // backwards compat, always ""
 }
 
+func getAuthURL(_ context.Context, cfg *config.Config, _ struct{}) (authUrlResponse, error) {
+	if cfg.SpotifyClientID == "" {
+		return authUrlResponse{}, httputil.NewAPIError(http.StatusInternalServerError, "ConfigError", "missing Spotify client configuration")
+	}
+
+	svc := spotify.NewService(cfg)
+	authURL := svc.AuthURL("setlistify-state")
+
+	return authUrlResponse{
+		AuthURL:   authURL,
+		CachePath: "", // Backwards compatibility for older clients
+	}, nil
+}
+
+// AuthUrl handles GET /api/authUrl
+func AuthUrl(w http.ResponseWriter, r *http.Request) {
+	httputil.Handle(http.MethodGet, getAuthURL)(w, r)
+}

@@ -2,11 +2,15 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/alexcaulfield/setlistify/internal/config"
+	"github.com/alexcaulfield/setlistify/internal/httputil"
 )
 
 func TestAuthUrlHandler(t *testing.T) {
@@ -68,4 +72,70 @@ func TestArtistSetlistsInvalidJSON(t *testing.T) {
 		t.Errorf("expected 400 Bad Request, got %d", rec.Code)
 	}
 }
+
+func TestGetAuthURLBusinessLogic(t *testing.T) {
+	t.Run("missing client ID returns ConfigError", func(t *testing.T) {
+		cfg := &config.Config{SpotifyClientID: ""}
+		_, err := getAuthURL(t.Context(), cfg, struct{}{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		var apiErr *httputil.APIError
+		if !errors.As(err, &apiErr) || apiErr.Type != "ConfigError" {
+			t.Errorf("expected ConfigError, got %v", err)
+		}
+	})
+
+	t.Run("valid config returns AuthURL", func(t *testing.T) {
+		cfg := &config.Config{
+			SpotifyClientID: "test-id",
+			RedirectURI:     "http://localhost:3000/callback",
+		}
+		res, err := getAuthURL(t.Context(), cfg, struct{}{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if res.AuthURL == "" {
+			t.Errorf("expected non-empty AuthURL")
+		}
+	})
+}
+
+func TestSearchSetlistArtistsEmptyName(t *testing.T) {
+	cfg := &config.Config{SetlistFMAPIKey: "dummy"}
+	res, err := searchSetlistArtists(t.Context(), cfg, setlistArtistsRequest{ArtistName: ""})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(res.Artists) != 0 {
+		t.Errorf("expected 0 artists for empty query, got %d", len(res.Artists))
+	}
+}
+
+func TestGetUserEmptyCode(t *testing.T) {
+	cfg := &config.Config{AppSecretKey: "secret"}
+	_, err := exchangeCodeForUser(t.Context(), cfg, getUserRequest{Code: ""})
+	if err == nil {
+		t.Fatal("expected error for empty code")
+	}
+	var apiErr *httputil.APIError
+	if !errors.As(err, &apiErr) || apiErr.Type != "BadRequest" {
+		t.Errorf("expected BadRequest APIError, got %v", err)
+	}
+}
+
+func TestBuildPlaylistInvalidToken(t *testing.T) {
+	cfg := &config.Config{AppSecretKey: "secret"}
+	_, err := buildPlaylist(t.Context(), cfg, buildPlaylistRequest{
+		Token: "invalid-token",
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid token")
+	}
+	var apiErr *httputil.APIError
+	if !errors.As(err, &apiErr) || apiErr.Type != "InvalidToken" {
+		t.Errorf("expected InvalidToken APIError, got %v", err)
+	}
+}
+
 

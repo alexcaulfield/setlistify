@@ -42,14 +42,23 @@ flowchart LR
 * **Testing**: Jest + React Testing Library (`@testing-library/react`)
 * **Runtime & Package Management**: Node.js 22 (`.nvmrc`), Yarn 4 (`yarn@4.17.0`)
 
-### Backend (`/flask-app`)
-* **Language & Runtime**: Python 3.11
-* **Web Framework**: Flask (`>=3.0.0`), Flask-CORS (`>=6.0.5`), Flask-Session (`>=0.8.0`)
-* **Authentication & Tokens**: PyJWT (`>=2.13.0`) for HS256-signed client tokens wrapping Spotify OAuth tokens
-* **External SDKs**:
-  * `spotipy` (`>=2.25.0`) — Spotify OAuth2 and Web API client
-  * `repertorio` (`0.0.1`) — Setlist.fm API client
-* **Configuration**: `python-decouple` and `python-dotenv`
+### Backend
+* **Go Serverless API (`/api`, `/internal`)** (Modern Vercel deployment):
+  * **Language & Runtime**: Go 1.22+ (`go.mod`)
+  * **Handler Architecture**: Pattern A (pure domain functions wired through `httputil.Handle[Req, Res]` generic adapter)
+  * **Authentication**: `github.com/golang-jwt/jwt/v5` for HS256-signed JWT tokens
+  * **External SDKs**:
+    * `github.com/zmb3/spotify/v2` & `golang.org/x/oauth2` — Spotify OAuth2 and Web API client
+    * Native HTTP client for Setlist.fm REST API (`internal/setlistfm`)
+  * **Local Dev Server**: `cmd/devserver/main.go`
+* **Legacy Flask API (`/flask-app`)** (AWS Lambda fallback):
+  * **Language & Runtime**: Python 3.11
+  * **Web Framework**: Flask (`>=3.0.0`), Flask-CORS (`>=6.0.5`), Flask-Session (`>=0.8.0`)
+  * **Authentication & Tokens**: PyJWT (`>=2.13.0`) for HS256-signed client tokens wrapping Spotify OAuth tokens
+  * **External SDKs**:
+    * `spotipy` (`>=2.25.0`) — Spotify OAuth2 and Web API client
+    * `repertorio` (`0.0.1`) — Setlist.fm API client
+  * **Configuration**: `python-decouple` and `python-dotenv`
 
 ### Hosting & Infrastructure
 * **Frontend**: **Netlify** — configured via `netlify.toml` (`yarn build`, publishes `build/`).
@@ -98,6 +107,21 @@ Because artist names on Spotify and Setlist.fm can collide across multiple acts 
   * When `IS_OFFLINE=true`, sessions and Spotipy OAuth cache files are written to local relative folders (`./flask_session`, `./.cache`), and `REDIRECT_URI` points to `http://127.0.0.1:3000/callback`.
   * In AWS Lambda (`IS_OFFLINE=false`), writable state is stored in `/tmp/flask_session` and `/tmp/.cache`, and `REDIRECT_URI` points to `https://setlistify.app/callback`.
 
+### 5. Go Serverless Handler Architecture (Pattern A)
+The Go Vercel serverless functions in `api/*.go` separate HTTP transport lifecycle concerns from pure domain logic:
+1. **Generic Handler Adapter (`internal/httputil/adapter.go`)**:
+   - `httputil.Handle[Req, Res](method, fn)` wraps a pure business logic function `func(ctx, cfg, req) (res, error)`.
+   - Automates CORS preflight (OPTIONS 204), HTTP method checks (405), configuration loading, JSON decoding for non-GET requests (400), and structured error/success JSON writing.
+   - Translates `httputil.APIError` into specific HTTP status codes and error type payloads (falling back to 500 `ServerError`).
+2. **Pure Domain Functions**:
+   - Reside in the `api/` package alongside the exported entry point (e.g. `resolveArtistSetlists`, `searchArtists`, `buildPlaylist`).
+   - Accept typed DTO requests, context, and config; return typed DTO responses and errors.
+   - Fully testable in isolation without mocking `http.ResponseWriter` or HTTP request streams.
+3. **Vercel Entry Points**:
+   - Retain standard signature `func(w http.ResponseWriter, r *http.Request)`.
+   - Single-line delegates to `httputil.Handle(method, businessFunc)(w, r)`.
+
+
 ---
 
 ## Directory Structure
@@ -108,7 +132,23 @@ setlistify-app/
 │   └── skills -> ~/Documents/develop/.agents/skills # Symlink to shared skills repo
 ├── .github/
 │   └── workflows/                     # GitHub Actions CI workflows
-├── flask-app/
+├── api/                               # Go Vercel serverless entry points (Pattern A)
+│   ├── artistSearch.go
+│   ├── artistSetlists.go
+│   ├── authUrl.go
+│   ├── buildPlaylist.go
+│   ├── getUser.go
+│   ├── setlistArtists.go
+│   └── handlers_test.go
+├── cmd/
+│   └── devserver/                     # Local standalone Go dev server
+├── internal/
+│   ├── auth/                          # JWT token encoding & decoding
+│   ├── config/                        # Environment & config loading
+│   ├── httputil/                      # CORS, JSON, and generic adapter Handle[Req, Res]
+│   ├── setlistfm/                     # Setlist.fm client & setlist resolution
+│   └── spotify/                       # Spotify service, user client, & playlist creation
+├── flask-app/                         # Legacy Python Flask backend (AWS Lambda)
 │   ├── app.py                         # Flask application & REST endpoints
 │   ├── config.py                      # Environment variables & OAuth config
 │   ├── setlist_helpers.py             # Setlist.fm response extraction helpers

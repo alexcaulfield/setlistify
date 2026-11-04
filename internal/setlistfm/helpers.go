@@ -2,7 +2,6 @@ package setlistfm
 
 import (
 	"context"
-	"fmt"
 	"strings"
 )
 
@@ -50,42 +49,130 @@ func PickSetlistByID(setlists []Setlist, id string) *Setlist {
 	return nil
 }
 
-// ResolveArtistSetlists attempts to find setlists for an artist by trying:
-// 1. Searching artists for the query, and trying candidates' MBIDs.
-// 2. Falling back to direct SearchSetlistsByArtist if artist search yields nothing or no setlists.
-func ResolveArtistSetlists(ctx context.Context, client *Client, artistName string) ([]Setlist, error) {
+// ResolveResult holds the resolved setlists and the chosen artist MBID.
+type ResolveResult struct {
+	Setlists []Setlist
+	MBID     string
+}
+
+// ResolveArtistSetlists resolves setlists for an artist.
+// If mbid is non-empty, fetches directly.
+// Otherwise searches by name with exact-match priority, SetlistHasSongs preference,
+// and SearchSetlistsByArtist fallback with partial-name filtering.
+func ResolveArtistSetlists(ctx context.Context, client *Client, artistName, mbid string) (*ResolveResult, error) {
+	// 1. If mbid is provided, fetch directly for that MBID
+	if mbid != "" {
+		res, err := client.GetArtistSetlists(ctx, mbid, 1)
+		if err == nil && res != nil {
+			setlists := res.Setlist
+			if setlists == nil {
+				setlists = []Setlist{}
+			}
+			return &ResolveResult{
+				Setlists: setlists,
+				MBID:     mbid,
+			}, nil
+		}
+	}
+
+	// 2. If artistName is provided, search matching artists and pick candidate with setlists
 	trimmedName := strings.TrimSpace(artistName)
-	if trimmedName == "" {
-		return nil, fmt.Errorf("artist name cannot be empty")
-	}
+	if trimmedName != "" {
+		normalizedName := strings.ToLower(trimmedName)
+		artistsRes, err := client.SearchArtists(ctx, trimmedName, 1)
+		if err == nil && artistsRes != nil && len(artistsRes.Artist) > 0 {
+			var exactMatches []Artist
+			for _, a := range artistsRes.Artist {
+				if strings.ToLower(strings.TrimSpace(a.Name)) == normalizedName {
+					exactMatches = append(exactMatches, a)
+				}
+			}
 
-	// 1. Search for matching artists
-	artistsResp, err := client.SearchArtists(ctx, trimmedName, 1)
-	if err == nil && artistsResp != nil && len(artistsResp.Artist) > 0 {
-		// Iterate over top candidate artists (up to 3) to find one with setlists
-		maxCandidates := 3
-		if len(artistsResp.Artist) < maxCandidates {
-			maxCandidates = len(artistsResp.Artist)
+			candidates := exactMatches
+			if len(candidates) == 0 {
+				candidates = artistsRes.Artist
+			}
+			if len(candidates) > 3 {
+				candidates = candidates[:3]
+			}
+
+			var bestSetlists []Setlist
+			var bestMBID string
+
+			for _, candidate := range candidates {
+				if candidate.MBID == "" {
+					continue
+				}
+				sRes, err := client.GetArtistSetlists(ctx, candidate.MBID, 1)
+				if err == nil && sRes != nil && len(sRes.Setlist) > 0 {
+					hasSongs := false
+					for _, s := range sRes.Setlist {
+						if SetlistHasSongs(&s) {
+							hasSongs = true
+							break
+						}
+					}
+					if hasSongs {
+						return &ResolveResult{
+							Setlists: sRes.Setlist,
+							MBID:     candidate.MBID,
+						}, nil
+					} else if len(bestSetlists) == 0 {
+						bestSetlists = sRes.Setlist
+						bestMBID = candidate.MBID
+					}
+				}
+			}
+
+			if len(bestSetlists) > 0 {
+				return &ResolveResult{
+					Setlists: bestSetlists,
+					MBID:     bestMBID,
+				}, nil
+			}
 		}
 
-		for i := 0; i < maxCandidates; i++ {
-			candidate := artistsResp.Artist[i]
-			if candidate.MBID == "" {
-				continue
+		// Fallback: search setlists directly by artist name
+		searchRes, err := client.SearchSetlistsByArtist(ctx, trimmedName, 1)
+		if err == nil && searchRes != nil && len(searchRes.Setlist) > 0 {
+			var exact []Setlist
+			var filtered []Setlist
+			for _, s := range searchRes.Setlist {
+				artistNameLower := strings.ToLower(strings.TrimSpace(s.Artist.Name))
+				if artistNameLower == normalizedName {
+					exact = append(exact, s)
+				} else if strings.Contains(artistNameLower, normalizedName) {
+					filtered = append(filtered, s)
+				}
 			}
-			setlistsResp, err := client.GetArtistSetlists(ctx, candidate.MBID, 1)
-			if err == nil && setlistsResp != nil && len(setlistsResp.Setlist) > 0 {
-				return setlistsResp.Setlist, nil
+			if len(exact) > 0 {
+				return &ResolveResult{
+					Setlists: exact,
+					MBID:     exact[0].Artist.MBID,
+				}, nil
 			}
+			if len(filtered) > 0 {
+				var fallbackMBID string
+				if filtered[0].Artist.MBID != "" {
+					fallbackMBID = filtered[0].Artist.MBID
+				}
+				return &ResolveResult{
+					Setlists: filtered,
+					MBID:     fallbackMBID,
+				}, nil
+			}
+			setlists := searchRes.Setlist
+			if setlists == nil {
+				setlists = []Setlist{}
+			}
+			return &ResolveResult{
+				Setlists: setlists,
+			}, nil
 		}
 	}
 
-	// 2. Fallback: Search setlists directly by artist name
-	directResp, err := client.SearchSetlistsByArtist(ctx, trimmedName, 1)
-	if err == nil && directResp != nil && len(directResp.Setlist) > 0 {
-		return directResp.Setlist, nil
-	}
-
-	return []Setlist{}, nil
+	return &ResolveResult{
+		Setlists: []Setlist{},
+	}, nil
 }
 

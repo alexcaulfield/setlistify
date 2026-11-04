@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/alexcaulfield/setlistify/internal/config"
+	spotifyclient "github.com/zmb3/spotify/v2"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
 	"golang.org/x/oauth2"
 )
@@ -54,4 +55,10 @@ func (s *Service) Exchange(ctx context.Context, code string) (*oauth2.Token, err
 func (s *Service) Authenticator() *spotifyauth.Authenticator {
 	return s.auth
 }
+
+// NewUserClient creates a Spotify client authenticated with the given OAuth token.
+func NewUserClient(ctx context.Context, token *oauth2.Token) *spotifyclient.Client {
+	return spotifyclient.New(oauth2.NewClient(ctx, oauth2.StaticTokenSource(token)))
+}
+
 

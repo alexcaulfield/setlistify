@@ -81,39 +81,127 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 func TestResolveArtistSetlists(t *testing.T) {
-	transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
-		rec := httptest.NewRecorder()
-		rec.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/search/artists":
-			resp := ArtistsResponse{
-				Artist: []Artist{
-					{MBID: "mbid-1", Name: "Radiohead"},
-				},
+	t.Run("by MBID direct lookup", func(t *testing.T) {
+		transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			rec := httptest.NewRecorder()
+			rec.Header().Set("Content-Type", "application/json")
+			if r.URL.Path == "/artist/direct-mbid/setlists" {
+				json.NewEncoder(rec).Encode(SetlistsResponse{
+					Setlist: []Setlist{{ID: "set-direct"}},
+				})
+			} else {
+				rec.WriteHeader(http.StatusNotFound)
 			}
-			json.NewEncoder(rec).Encode(resp)
-		case "/artist/mbid-1/setlists":
-			resp := SetlistsResponse{
-				Setlist: []Setlist{
-					{ID: "set-1"},
-				},
-			}
-			json.NewEncoder(rec).Encode(resp)
-		default:
-			rec.WriteHeader(http.StatusNotFound)
+			return rec.Result(), nil
+		})
+
+		httpClient := &http.Client{Transport: transport}
+		client := NewClient("dummy-key", WithBaseURL("http://setlistfm.mock"), WithHTTPClient(httpClient))
+		res, err := ResolveArtistSetlists(context.Background(), client, "", "direct-mbid")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
-		return rec.Result(), nil
+		if res.MBID != "direct-mbid" || len(res.Setlists) != 1 || res.Setlists[0].ID != "set-direct" {
+			t.Fatalf("unexpected result: %+v", res)
+		}
 	})
 
-	httpClient := &http.Client{Transport: transport}
-	client := NewClient("dummy-key", WithBaseURL("http://setlistfm.mock"), WithHTTPClient(httpClient))
-	setlists, err := ResolveArtistSetlists(context.Background(), client, "Radiohead")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(setlists) != 1 || setlists[0].ID != "set-1" {
-		t.Fatalf("expected 1 setlist with ID set-1, got %+v", setlists)
-	}
+	t.Run("by artist name with exact-match and songs preference", func(t *testing.T) {
+		transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			rec := httptest.NewRecorder()
+			rec.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/search/artists":
+				json.NewEncoder(rec).Encode(ArtistsResponse{
+					Artist: []Artist{
+						{MBID: "mbid-exact", Name: "Radiohead"},
+						{MBID: "mbid-tribute", Name: "Radiohead Tribute"},
+					},
+				})
+			case "/artist/mbid-exact/setlists":
+				json.NewEncoder(rec).Encode(SetlistsResponse{
+					Setlist: []Setlist{
+						{
+							ID: "set-radiohead",
+							Sets: Sets{
+								Set: []Set{
+									{Song: []Song{{Name: "Creep"}}},
+								},
+							},
+						},
+					},
+				})
+			default:
+				rec.WriteHeader(http.StatusNotFound)
+			}
+			return rec.Result(), nil
+		})
+
+		httpClient := &http.Client{Transport: transport}
+		client := NewClient("dummy-key", WithBaseURL("http://setlistfm.mock"), WithHTTPClient(httpClient))
+		res, err := ResolveArtistSetlists(context.Background(), client, "Radiohead", "")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if res.MBID != "mbid-exact" || len(res.Setlists) != 1 || res.Setlists[0].ID != "set-radiohead" {
+			t.Fatalf("unexpected result: %+v", res)
+		}
+	})
+
+	t.Run("fallback to SearchSetlistsByArtist", func(t *testing.T) {
+		transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			rec := httptest.NewRecorder()
+			rec.Header().Set("Content-Type", "application/json")
+			switch r.URL.Path {
+			case "/search/artists":
+				json.NewEncoder(rec).Encode(ArtistsResponse{Artist: []Artist{}})
+			case "/search/setlists":
+				json.NewEncoder(rec).Encode(SetlistsResponse{
+					Setlist: []Setlist{
+						{
+							ID: "set-fallback",
+							Artist: Artist{
+								MBID: "mbid-fallback",
+								Name: "Radiohead",
+							},
+						},
+					},
+				})
+			default:
+				rec.WriteHeader(http.StatusNotFound)
+			}
+			return rec.Result(), nil
+		})
+
+		httpClient := &http.Client{Transport: transport}
+		client := NewClient("dummy-key", WithBaseURL("http://setlistfm.mock"), WithHTTPClient(httpClient))
+		res, err := ResolveArtistSetlists(context.Background(), client, "Radiohead", "")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if res.MBID != "mbid-fallback" || len(res.Setlists) != 1 || res.Setlists[0].ID != "set-fallback" {
+			t.Fatalf("unexpected fallback result: %+v", res)
+		}
+	})
+
+	t.Run("empty result when nothing found", func(t *testing.T) {
+		transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+			rec := httptest.NewRecorder()
+			rec.Header().Set("Content-Type", "application/json")
+			rec.WriteHeader(http.StatusNotFound)
+			return rec.Result(), nil
+		})
+
+		httpClient := &http.Client{Transport: transport}
+		client := NewClient("dummy-key", WithBaseURL("http://setlistfm.mock"), WithHTTPClient(httpClient))
+		res, err := ResolveArtistSetlists(context.Background(), client, "Unknown Artist", "")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(res.Setlists) != 0 || res.MBID != "" {
+			t.Fatalf("expected empty result, got: %+v", res)
+		}
+	})
 }
 
 func TestSearchArtistsSortRelevance(t *testing.T) {
