@@ -31,27 +31,29 @@ export interface UserType {
 
 interface AppRoutingProps {
   user: UserType | {},
-  setUser: (UserType) => void,
+  setUser: (user: any) => void,
   isLoggedIn: boolean,
-  setIsLoggedIn: (boolean) => void,
+  setIsLoggedIn: (loggedIn: boolean) => void,
 }
 
 const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps) => {
   const [authUrl, setAuthUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState('');
-  const [cachePath, setCachePath] = useState('');
 
   useEffect(() => {
     fetch(`${fetchUrl()}/authUrl`)
       .then(response => response.json())
-      .then(({authUrl, cachePath}) => {
+      .then(({authUrl}) => {
         if (authUrl) {
           setAuthUrl(authUrl);
-          setCachePath(cachePath);
           setIsLoading(false);
         }
       })
+      .catch(err => {
+        console.error("Failed to fetch authUrl:", err);
+        setIsLoading(false);
+      });
   }, []);
 
   return (
@@ -75,7 +77,6 @@ const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps)
               handleLogin={() => setIsLoggedIn(true)}
               setUser={setUser}
               setToken={setToken}
-              cachePath={cachePath}
             />
           ) : (
             <Redirect to='/createPlaylist' />
@@ -99,4 +100,3 @@ const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps)
 };
 
 export default AppRouting;
-

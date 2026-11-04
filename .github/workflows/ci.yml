@@ -4,8 +4,52 @@ on:
   pull_request:
     branches:
       - master
+  push:
+    branches:
+      - master
 
 jobs:
+  go-test:
+    name: Go Test & Vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Go Test
+        run: go test -v -count=1 ./...
+
+  frontend:
+    name: Frontend Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run tests
+        run: yarn test --watchAll=false
+
+      - name: Build bundle
+        run: yarn build
+
   flask-install:
     name: flask-install
     runs-on: ubuntu-latest
@@ -16,7 +60,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
 
       - name: Install Flask dependencies
         run: pip install -r flask-app/requirements.txt
