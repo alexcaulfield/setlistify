@@ -51,7 +51,7 @@ jobs:
         run: yarn build
 
   flask-install:
-    name: Flask Install (Legacy)
+    name: flask-install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
