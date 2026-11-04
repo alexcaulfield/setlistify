@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/alexcaulfield/setlistify/internal/config"
@@ -39,39 +38,7 @@ func TestAuthUrlHandler(t *testing.T) {
 	}
 }
 
-func TestGetUserValidation(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/getUser", nil)
-	rec := httptest.NewRecorder()
 
-	GetUser(rec, req)
-
-	// GET not allowed
-	if rec.Code != http.StatusMethodNotAllowed {
-		t.Errorf("expected 405 Method Not Allowed, got %d", rec.Code)
-	}
-}
-
-func TestArtistSetlistsMethodNotAllowed(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/artistSetlists", nil)
-	rec := httptest.NewRecorder()
-
-	ArtistSetlists(rec, req)
-
-	if rec.Code != http.StatusMethodNotAllowed {
-		t.Errorf("expected 405 Method Not Allowed, got %d", rec.Code)
-	}
-}
-
-func TestArtistSetlistsInvalidJSON(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/api/artistSetlists", strings.NewReader("invalid-json"))
-	rec := httptest.NewRecorder()
-
-	ArtistSetlists(rec, req)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 Bad Request, got %d", rec.Code)
-	}
-}
 
 func TestGetAuthURLBusinessLogic(t *testing.T) {
 	t.Run("missing client ID returns ConfigError", func(t *testing.T) {

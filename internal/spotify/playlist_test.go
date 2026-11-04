@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	spotifyclient "github.com/zmb3/spotify/v2"
-	"golang.org/x/oauth2"
 )
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
@@ -17,7 +17,6 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 func TestResolveTrackIDs(t *testing.T) {
-	// Mock HTTP response for search endpoint
 	transport := roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		q := r.URL.Query().Get("q")
 		var trackID string
@@ -26,66 +25,57 @@ func TestResolveTrackIDs(t *testing.T) {
 			trackID = "track_tweezer"
 		case q == "artist:Phish track:Ghost":
 			trackID = "track_ghost"
-		case q == "artist:Phish track:Unknown":
-			trackID = ""
+		// "Unknown" and fallback queries return empty results
 		}
 
-		res := struct {
-			Tracks struct {
-				Items []struct {
-					ID   string `json:"id"`
-					Name string `json:"name"`
-				} `json:"items"`
-			} `json:"tracks"`
-		}{}
+		type item struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}
+		type tracks struct {
+			Items []item `json:"items"`
+		}
+		type result struct {
+			Tracks tracks `json:"tracks"`
+		}
 
+		res := result{}
 		if trackID != "" {
-			res.Tracks.Items = []struct {
-				ID   string `json:"id"`
-				Name string `json:"name"`
-			}{
-				{ID: trackID, Name: trackID},
-			}
+			res.Tracks.Items = []item{{ID: trackID, Name: trackID}}
 		}
 
-		bodyBytes, _ := json.Marshal(res)
-		rec := &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     make(http.Header),
-			Body:       http.NoBody,
+		bodyBytes, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
 		}
-		rec.Header.Set("Content-Type", "application/json")
-		rec.Body = ioCloserReader{readFn: func(p []byte) (int, error) {
-			copy(p, bodyBytes)
-			return len(bodyBytes), nil
-		}}
-		return rec, nil
+
+		rec := httptest.NewRecorder()
+		rec.Header().Set("Content-Type", "application/json")
+		rec.Write(bodyBytes)
+		return rec.Result(), nil
 	})
 
-	_ = transport
-}
-
-type ioCloserReader struct {
-	readFn func(p []byte) (int, error)
-}
-
-func (r ioCloserReader) Read(p []byte) (n int, err error) {
-	return r.readFn(p)
-}
-
-func (r ioCloserReader) Close() error {
-	return nil
-}
-
-func TestPlaylistClientCreation(t *testing.T) {
-	tok := &oauth2.Token{
-		AccessToken: "mock-token",
-		TokenType:   "Bearer",
-	}
+	client := spotifyclient.New(&http.Client{Transport: transport})
 	ctx := context.Background()
-	client := spotifyclient.New(oauth2.NewClient(ctx, oauth2.StaticTokenSource(tok)))
-	if client == nil {
-		t.Fatal("expected spotify client to not be nil")
+
+	// Golden path: known songs resolve in order, unknown song dropped, whitespace skipped
+	ids, err := ResolveTrackIDs(ctx, client, "Phish", []string{"Tweezer", "Ghost", "Unknown", "  "}, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(ids) != 2 {
+		t.Fatalf("expected 2 track IDs, got %d: %v", len(ids), ids)
+	}
+	if ids[0] != "track_tweezer" || ids[1] != "track_ghost" {
+		t.Errorf("unexpected track IDs: %v", ids)
+	}
+
+	// Edge case: empty input returns empty slice without error
+	ids, err = ResolveTrackIDs(ctx, client, "Phish", []string{}, 3)
+	if err != nil {
+		t.Fatalf("unexpected error on empty input: %v", err)
+	}
+	if len(ids) != 0 {
+		t.Errorf("expected 0 track IDs for empty input, got %d", len(ids))
 	}
 }
-
