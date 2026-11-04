@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/alexcaulfield/setlistify/internal/config"
+	"github.com/alexcaulfield/setlistify/pkg/config"
 )
 
 func TestConfigLoadDefaults(t *testing.T) {

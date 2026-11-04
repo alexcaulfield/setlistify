@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexcaulfield/setlistify/internal/config"
+	"github.com/alexcaulfield/setlistify/pkg/config"
 )
 
 type dummyReq struct {

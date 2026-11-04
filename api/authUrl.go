@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/alexcaulfield/setlistify/internal/config"
-	"github.com/alexcaulfield/setlistify/internal/httputil"
-	"github.com/alexcaulfield/setlistify/internal/spotify"
+	"github.com/alexcaulfield/setlistify/pkg/config"
+	"github.com/alexcaulfield/setlistify/pkg/httputil"
+	"github.com/alexcaulfield/setlistify/pkg/spotify"
 )
 
 type authUrlResponse struct {

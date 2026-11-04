@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/alexcaulfield/setlistify/internal/config"
+	"github.com/alexcaulfield/setlistify/pkg/config"
 )
 
 // HandlerFunc is a typed handler that returns a response or an error.
