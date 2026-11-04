@@ -90,7 +90,6 @@ func buildPlaylist(ctx context.Context, cfg *config.Config, req buildPlaylistReq
 	}, nil
 }
 
-// BuildPlaylist handles POST /api/buildPlaylist
 func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 	httputil.Handle(http.MethodPost, buildPlaylist)(w, r)
 }

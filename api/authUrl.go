@@ -28,7 +28,6 @@ func getAuthURL(_ context.Context, cfg *config.Config, _ struct{}) (authUrlRespo
 	}, nil
 }
 
-// AuthUrl handles GET /api/authUrl
 func AuthUrl(w http.ResponseWriter, r *http.Request) {
 	httputil.Handle(http.MethodGet, getAuthURL)(w, r)
 }

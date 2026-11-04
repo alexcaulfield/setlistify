@@ -49,7 +49,6 @@ func exchangeCodeForUser(ctx context.Context, cfg *config.Config, req getUserReq
 	}, nil
 }
 
-// GetUser handles POST /api/getUser
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	httputil.Handle(http.MethodPost, exchangeCodeForUser)(w, r)
 }

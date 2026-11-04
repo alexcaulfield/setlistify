@@ -52,7 +52,6 @@ func searchArtists(ctx context.Context, cfg *config.Config, req artistSearchRequ
 	}, nil
 }
 
-// ArtistSearch handles POST /api/artistSearch
 func ArtistSearch(w http.ResponseWriter, r *http.Request) {
 	httputil.Handle(http.MethodPost, searchArtists)(w, r)
 }

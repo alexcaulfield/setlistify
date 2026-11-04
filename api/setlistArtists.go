@@ -40,7 +40,6 @@ func searchSetlistArtists(ctx context.Context, cfg *config.Config, req setlistAr
 	}, nil
 }
 
-// SetlistArtists handles POST /api/setlistArtists
 func SetlistArtists(w http.ResponseWriter, r *http.Request) {
 	httputil.Handle(http.MethodPost, searchSetlistArtists)(w, r)
 }

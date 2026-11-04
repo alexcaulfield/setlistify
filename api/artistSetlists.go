@@ -37,7 +37,6 @@ func resolveArtistSetlists(ctx context.Context, cfg *config.Config, req artistSe
 	}, nil
 }
 
-// ArtistSetlists handles POST /api/artistSetlists
 func ArtistSetlists(w http.ResponseWriter, r *http.Request) {
 	httputil.Handle(http.MethodPost, resolveArtistSetlists)(w, r)
 }
