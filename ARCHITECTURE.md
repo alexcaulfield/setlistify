@@ -43,13 +43,13 @@ flowchart LR
 * **Runtime & Package Management**: Node.js 22 (`.nvmrc`), Yarn 4 (`yarn@4.17.0`)
 
 ### Backend
-* **Go Serverless API (`/api`, `/internal`)** (Modern Vercel deployment):
+* **Go Serverless API (`/api`, `/pkg`)** (Modern Vercel deployment):
   * **Language & Runtime**: Go 1.22+ (`go.mod`)
   * **Handler Architecture**: Pattern A (pure domain functions wired through `httputil.Handle[Req, Res]` generic adapter)
   * **Authentication**: `github.com/golang-jwt/jwt/v5` for HS256-signed JWT tokens
   * **External SDKs**:
     * `github.com/zmb3/spotify/v2` & `golang.org/x/oauth2` — Spotify OAuth2 and Web API client
-    * Native HTTP client for Setlist.fm REST API (`internal/setlistfm`)
+    * Native HTTP client for Setlist.fm REST API (`pkg/setlistfm`)
   * **Local Dev Server**: `cmd/devserver/main.go`
 * **Legacy Flask API (`/flask-app`)** (AWS Lambda fallback):
   * **Language & Runtime**: Python 3.11
@@ -109,7 +109,7 @@ Because artist names on Spotify and Setlist.fm can collide across multiple acts 
 
 ### 5. Go Serverless Handler Architecture (Pattern A)
 The Go Vercel serverless functions in `api/*.go` separate HTTP transport lifecycle concerns from pure domain logic:
-1. **Generic Handler Adapter (`internal/httputil/adapter.go`)**:
+1. **Generic Handler Adapter (`pkg/httputil/adapter.go`)**:
    - `httputil.Handle[Req, Res](method, fn)` wraps a pure business logic function `func(ctx, cfg, req) (res, error)`.
    - Automates CORS preflight (OPTIONS 204), HTTP method checks (405), configuration loading, JSON decoding for non-GET requests (400), and structured error/success JSON writing.
    - Translates `httputil.APIError` into specific HTTP status codes and error type payloads (falling back to 500 `ServerError`).
@@ -142,7 +142,7 @@ setlistify-app/
 │   └── handlers_test.go
 ├── cmd/
 │   └── devserver/                     # Local standalone Go dev server
-├── internal/
+├── pkg/
 │   ├── auth/                          # JWT token encoding & decoding
 │   ├── config/                        # Environment & config loading
 │   ├── httputil/                      # CORS, JSON, and generic adapter Handle[Req, Res]

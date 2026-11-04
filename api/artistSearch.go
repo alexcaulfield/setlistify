@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/alexcaulfield/setlistify/internal/auth"
-	"github.com/alexcaulfield/setlistify/internal/config"
-	"github.com/alexcaulfield/setlistify/internal/httputil"
-	"github.com/alexcaulfield/setlistify/internal/spotify"
+	"github.com/alexcaulfield/setlistify/pkg/auth"
+	"github.com/alexcaulfield/setlistify/pkg/config"
+	"github.com/alexcaulfield/setlistify/pkg/httputil"
+	"github.com/alexcaulfield/setlistify/pkg/spotify"
 	spotifyclient "github.com/zmb3/spotify/v2"
 )
 

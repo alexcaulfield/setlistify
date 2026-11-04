@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alexcaulfield/setlistify/internal/config"
+	"github.com/alexcaulfield/setlistify/pkg/config"
 	spotifyclient "github.com/zmb3/spotify/v2"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
 	"golang.org/x/oauth2"

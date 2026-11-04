@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/alexcaulfield/setlistify/internal/config"
-	"github.com/alexcaulfield/setlistify/internal/httputil"
+	"github.com/alexcaulfield/setlistify/pkg/config"
+	"github.com/alexcaulfield/setlistify/pkg/httputil"
 )
 
 func TestAuthUrlHandler(t *testing.T) {
