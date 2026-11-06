@@ -10,9 +10,8 @@ import (
 )
 
 func main() {
-	// Try loading local .env or flask-app/.env if present
+	// Try loading local .env if present
 	_ = godotenv.Load(".env")
-	_ = godotenv.Load("flask-app/.env")
 
 	// Ensure local dev environment is recognized as offline/local
 	if os.Getenv("IS_OFFLINE") == "" {

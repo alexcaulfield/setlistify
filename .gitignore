@@ -19,24 +19,12 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
-.spotipyoauthcache
 
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .yarn/install-state.gz
 
-# Python
-__pycache__/
-*.pyc
-.cache
-.cache/
-flask_session/
-flask-app/flask_session/
-flask-app/.cache
-flask-app/.cache/
-.serverless/
-flask-app/.serverless/
 package-lock.json
 
 
