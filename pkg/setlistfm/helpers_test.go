@@ -56,6 +56,102 @@ func TestExtractSongNamesAndHasSongs(t *testing.T) {
 	}
 }
 
+func TestExtractSongsAndTapeFiltering(t *testing.T) {
+	setlist := &Setlist{
+		ID: "set-tape-cover",
+		Sets: Sets{
+			Set: []Set{
+				{
+					Name: "Set 1",
+					Song: []Song{
+						{Name: "Walk-on Tape", Tape: true},
+						{Name: "Song A"},
+						{
+							Name: "Toxic",
+							Cover: &Artist{
+								Name: "Britney Spears",
+								MBID: "45a663b5-b1cb-4a91-bff6-2bef7bbfdd76",
+							},
+						},
+						{
+							Name: "Song B",
+							Cover: &Artist{
+								Name: "   ",
+								MBID: "",
+							},
+						},
+						{Name: "   "},
+					},
+				},
+				{
+					Name:   "Encore",
+					Encore: 1,
+					Song: []Song{
+						{Name: "Don't Lose Sight"},
+						{Name: "Exit Music", Tape: true},
+					},
+				},
+			},
+		},
+	}
+
+	if !SetlistHasSongs(setlist) {
+		t.Fatalf("expected setlist to have songs")
+	}
+
+	songs := ExtractSongs(setlist)
+	if len(songs) != 4 {
+		t.Fatalf("expected 4 songs, got %d", len(songs))
+	}
+
+	if songs[0].Name != "Song A" || songs[0].Cover != nil {
+		t.Errorf("expected Song A without cover, got %+v", songs[0])
+	}
+	if songs[1].Name != "Toxic" || songs[1].Cover == nil || songs[1].Cover.Name != "Britney Spears" {
+		t.Errorf("expected Toxic with Britney Spears cover, got %+v", songs[1])
+	}
+	if songs[2].Name != "Song B" || songs[2].Cover != nil {
+		t.Errorf("expected Song B with nil cover, got %+v", songs[2])
+	}
+	if songs[3].Name != "Don't Lose Sight" || songs[3].Cover != nil {
+		t.Errorf("expected Don't Lose Sight without cover, got %+v", songs[3])
+	}
+
+	names := ExtractSongNames(setlist)
+	expectedNames := []string{"Song A", "Toxic", "Song B", "Don't Lose Sight"}
+	if len(names) != len(expectedNames) {
+		t.Fatalf("expected %d names, got %d", len(expectedNames), len(names))
+	}
+	for i, n := range expectedNames {
+		if names[i] != n {
+			t.Errorf("names[%d]: expected %q, got %q", i, n, names[i])
+		}
+	}
+
+	tapeOnlySetlist := &Setlist{
+		ID: "tape-only",
+		Sets: Sets{
+			Set: []Set{
+				{
+					Song: []Song{
+						{Name: "Intro", Tape: true},
+						{Name: "Outro", Tape: true},
+					},
+				},
+			},
+		},
+	}
+	if SetlistHasSongs(tapeOnlySetlist) {
+		t.Errorf("tape-only setlist should not have playable songs")
+	}
+	if len(ExtractSongs(tapeOnlySetlist)) != 0 {
+		t.Errorf("tape-only setlist should yield 0 songs from ExtractSongs")
+	}
+	if len(ExtractSongNames(tapeOnlySetlist)) != 0 {
+		t.Errorf("tape-only setlist should yield 0 names from ExtractSongNames")
+	}
+}
+
 func TestPickSetlistByID(t *testing.T) {
 	setlists := []Setlist{
 		{ID: "abc"},
