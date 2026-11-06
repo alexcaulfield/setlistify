@@ -49,17 +49,3 @@ jobs:
 
       - name: Build bundle
         run: yarn build
-
-  flask-install:
-    name: flask-install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Flask dependencies
-        run: pip install -r flask-app/requirements.txt

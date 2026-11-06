@@ -1,7 +1,5 @@
 # Setlistify
-Live at setlistify.app!
-
-[![Netlify Status](https://api.netlify.com/api/v1/badges/1ddc4b4f-68b8-410b-93a8-5f10c7fece4c/deploy-status)](https://app.netlify.com/sites/sleepy-roentgen-4c791e/deploys)
+Live at [setlistify.app](https://www.setlistify.app)!
 
 A platform for you to prep for concerts - find an artist you're seeing soon, and add their most recently played songs live to a Spotify playlist
 
@@ -10,7 +8,6 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 * **Frontend**: TypeScript, React 16, React Router v5, Semantic UI React (`semantic-ui-react`)
 * **Backend**: Go (Serverless Functions on Vercel), Spotify Web API (`zmb3/spotify/v2`), Setlist.fm API, HS256 JWT auth
 * **Infrastructure & Hosting**: Vercel (monorepo hosting React static build + Go serverless functions in `/api`)
-* **Legacy Backend (Archived)**: Python 3.11, Flask, AWS Lambda + API Gateway (Serverless Framework)
 
 ### Current Features
 * Autocomplete for artists
@@ -94,33 +91,34 @@ go test -v ./...
 yarn test --watchAll=false
 ```
 
-## Production deploy
+## Production Deployment
 
-1. Merge changes triggers a Netlify deploy of the UI
-2. Deploy the backend methods (fish shell)
-```
-for line in (cat .env | string match -v '^#*' | string match -v '^$')
-    set -gx (string split -m 1 = $line)
-end
-npx serverless deploy
-```
+Setlistify is deployed on [Vercel](https://vercel.com). Pushing changes to the `master` branch triggers an automated build and deployment of:
+- The React frontend static assets
+- The Go serverless API functions in `/api`
 
 ---
 
 ## Project Structure
 
 ```text
-setlistify-app/
-├── .agents/                  # Agent skills
-│   └── skills -> ~/Documents/develop/.agents/skills
-├── flask-app/                # Python Flask backend & Serverless config
-│   ├── app.py                # Flask routes and API entry point
-│   ├── config.py             # Environment variable loading & constants
-│   ├── setlist_helpers.py    # Setlist.fm data parsing & normalization
-│   ├── spotify_helpers.py    # Spotify track resolution & playlist creation
-│   ├── requirements.txt      # Python dependencies
-│   ├── serverless.yml        # AWS Lambda + WSGI Serverless deployment config
-│   └── package.json          # Serverless plugins
+setlistify/
+├── .github/                  # GitHub Actions CI & Dependabot configuration
+├── api/                      # Go Serverless Function entry points for Vercel
+│   ├── artistSearch.go
+│   ├── artistSetlists.go
+│   ├── authUrl.go
+│   ├── buildPlaylist.go
+│   ├── getUser.go
+│   └── setlistArtists.go
+├── cmd/
+│   └── devserver/            # Local Go development server
+│       └── main.go
+├── pkg/
+│   ├── auth/                 # JWT creation, parsing, and token encryption
+│   ├── httputil/             # CORS and JSON response utilities
+│   ├── setlistfm/            # Setlist.fm client and song normalization
+│   └── spotify/              # Spotify client, auth, and playlist generation
 ├── plans/                    # Approved architectural and feature plans
 ├── public/                   # Static HTML template, icons, and web manifest
 ├── src/                      # React + TypeScript frontend source
@@ -129,13 +127,9 @@ setlistify-app/
 │   ├── utils/                # Environment helpers (dev_env.ts)
 │   ├── App.tsx               # Root application layout & state
 │   └── index.tsx             # React DOM entry point
+├── vercel.json               # Vercel routing and header configuration
 ├── ARCHITECTURE.md           # System design and architectural patterns
-├── netlify.toml              # Netlify build configuration
+├── go.mod                    # Go module dependencies
 ├── package.json              # Frontend dependencies and scripts
 └── tsconfig.json             # TypeScript compiler configuration
 ```
-
----
-
-### Resources
-https://www.serverless.com/blog/flask-python-rest-api-serverless-lambda-dynamodb

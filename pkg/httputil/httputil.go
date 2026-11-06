@@ -51,7 +51,7 @@ type ErrorResponse struct {
 	Type  string `json:"type"`
 }
 
-// WriteError writes a structured JSON error response matching the Flask error format.
+// WriteError writes a structured JSON error response matching the API error format.
 func WriteError(w http.ResponseWriter, status int, err error, errType string) {
 	if errType == "" {
 		errType = "ServerError"
