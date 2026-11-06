@@ -2,18 +2,15 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/alexcaulfield/setlistify/internal/auth"
-	"github.com/alexcaulfield/setlistify/internal/config"
-	"github.com/alexcaulfield/setlistify/internal/httputil"
-	"github.com/alexcaulfield/setlistify/internal/setlistfm"
-	"github.com/alexcaulfield/setlistify/internal/spotify"
-	spotifyclient "github.com/zmb3/spotify/v2"
-	"golang.org/x/oauth2"
+	"github.com/alexcaulfield/setlistify/pkg/auth"
+	"github.com/alexcaulfield/setlistify/pkg/config"
+	"github.com/alexcaulfield/setlistify/pkg/httputil"
+	"github.com/alexcaulfield/setlistify/pkg/setlistfm"
+	"github.com/alexcaulfield/setlistify/pkg/spotify"
 )
 
 type buildPlaylistRequest struct {
@@ -29,33 +26,13 @@ type buildPlaylistResponse struct {
 	PlaylistURI string `json:"playlistUri,omitempty"`
 }
 
-// BuildPlaylist handles POST /api/buildPlaylist
-func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
-	if httputil.SetCORS(w, r) {
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		httputil.WriteError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "MethodNotAllowed")
-		return
-	}
-
-	cfg := config.Load()
-
-	var req buildPlaylistRequest
-	if err := httputil.DecodeJSON(r, &req); err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, err, "BadRequest")
-		return
-	}
-
+func buildPlaylist(ctx context.Context, cfg *config.Config, req buildPlaylistRequest) (buildPlaylistResponse, error) {
 	oauthToken, err := auth.DecodeToken(req.Token, cfg.AppSecretKey)
 	if err != nil {
-		httputil.WriteError(w, http.StatusUnauthorized, err, "InvalidToken")
-		return
+		return buildPlaylistResponse{}, httputil.WrapAPIError(http.StatusUnauthorized, "InvalidToken", err)
 	}
 
-	ctx := context.Background()
-	spotifyCli := spotifyclient.New(oauth2.NewClient(ctx, oauth2.StaticTokenSource(oauthToken)))
+	spotifyCli := spotify.NewUserClient(ctx, oauthToken)
 	setlistCli := setlistfm.NewClient(cfg.SetlistFMAPIKey)
 
 	var songs []setlistfm.Song
@@ -94,8 +71,7 @@ func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(songs) == 0 {
-		httputil.WriteError(w, http.StatusBadRequest, errors.New("no songs found for setlist"), "NoSongs")
-		return
+		return buildPlaylistResponse{}, httputil.NewAPIError(http.StatusBadRequest, "NoSongs", "no songs found for setlist")
 	}
 
 	songQueries := make([]spotify.SongQuery, len(songs))
@@ -113,18 +89,20 @@ func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
 	// Resolve Spotify track IDs concurrently (concurrency limit = 5)
 	trackIDs, err := spotify.ResolveTrackIDs(ctx, spotifyCli, req.ArtistName, songQueries, 5)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err, "SpotifyResolutionError")
-		return
+		return buildPlaylistResponse{}, httputil.WrapAPIError(http.StatusInternalServerError, "SpotifyResolutionError", err)
 	}
 
 	playlistDesc := "A playlist made with the setlistify.app"
 	playlist, err := spotify.CreateAndPopulatePlaylist(ctx, spotifyCli, playlistTitle, playlistDesc, trackIDs)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err, "SpotifyCreatePlaylistError")
-		return
+		return buildPlaylistResponse{}, httputil.WrapAPIError(http.StatusInternalServerError, "SpotifyCreatePlaylistError", err)
 	}
 
-	_ = httputil.WriteJSON(w, http.StatusOK, buildPlaylistResponse{
+	return buildPlaylistResponse{
 		PlaylistURI: string(playlist.URI),
-	})
+	}, nil
+}
+
+func BuildPlaylist(w http.ResponseWriter, r *http.Request) {
+	httputil.Handle(http.MethodPost, buildPlaylist)(w, r)
 }

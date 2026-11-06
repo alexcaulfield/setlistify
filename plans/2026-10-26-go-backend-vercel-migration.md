@@ -1,7 +1,7 @@
 # Plan: Refactor Backend to Go Serverless Functions and Migrate to Vercel
 
 - **Date:** 2026-10-26
-- **Status:** approved
+- **Status:** completed
 
 ## 1. Overview
 
@@ -69,17 +69,17 @@ setlistify-app/
 ## 3. Step-by-Step Implementation Details
 
 ### Phase 1: Go Foundation & Internal Packages
-- [ ] **Task 1.1: Initialize Go Module (`go.mod`)**
+- [x] **Task 1.1: Initialize Go Module (`go.mod`)**
   - Initialize `go.mod` in `setlistify-app/` (`module github.com/alexcaulfield/setlistify` or `setlistify`) targeting Go 1.22+.
   - Add dependencies: `github.com/zmb3/spotify/v2`, `golang.org/x/oauth2`, `github.com/golang-jwt/jwt/v5`, `golang.org/x/sync`, and `github.com/joho/godotenv`.
-- [ ] **Task 1.2: Implement Configuration & HTTP Utilities (`internal/config`, `internal/httputil`)**
+- [x] **Task 1.2: Implement Configuration & HTTP Utilities (`internal/config`, `internal/httputil`)**
   - Create `internal/config/config.go` to read `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SETLIST_FM_API_KEY`, `APP_SECRET_KEY`, `REDIRECT_URI`, and `SCOPE` (defaulting to `playlist-modify-public`).
   - Create `internal/httputil/httputil.go` for standard JSON serialization, method checking (`GET`/`POST`/`OPTIONS`), and structured error responses (`{"error": "...", "type": "..."}`).
-- [ ] **Task 1.3: Implement JWT Token Helper (`internal/auth/jwt.go`)**
+- [x] **Task 1.3: Implement JWT Token Helper (`internal/auth/jwt.go`)**
   - Implement `EncodeToken(oauthToken *oauth2.Token, secret string) (string, error)` and `DecodeToken(tokenStr string, secret string) (*oauth2.Token, error)` using HS256 so the client `token` workflow matches the existing frontend contract.
 
 ### Phase 2: External API Clients (`internal/setlistfm` & `internal/spotify`)
-- [ ] **Task 2.1: Build Setlist.fm Client & Helpers (`internal/setlistfm`)**
+- [x] **Task 2.1: Build Setlist.fm Client & Helpers (`internal/setlistfm`)**
   - Define typed structs in `types.go` including `Artist`, `Setlist`, `Venue`, `City`, `Coords` (`Lat`, `Long` for future concert map support), `Set`, and `Song`.
   - Implement HTTP methods in `client.go` with `x-api-key` and `Accept: application/json` headers and a 10-second `http.Client` timeout:
     - `SearchArtists(ctx, artistName)` (`GET /search/artists?artistName=...&sort=relevance`)
@@ -88,37 +88,37 @@ setlistify-app/
     - `GetSetlist(ctx, setlistID)` (`GET /setlist/{setlistID}`)
   - Port disambiguation and extraction helpers in `helpers.go` (`SetlistHasSongs`, `ExtractSongsFromSetlist`, `PickSetlistByID`, and candidate MBID resolution).
   - Write unit tests (`helpers_test.go`) covering multi-set/encore flattening, empty setlists, and artist name matching.
-- [ ] **Task 2.2: Build Spotify OAuth & Concurrent Playlist Engine (`internal/spotify`)**
+- [x] **Task 2.2: Build Spotify OAuth & Concurrent Playlist Engine (`internal/spotify`)**
   - In `client.go`, configure `spotifyauth.New(...)` for generating the authorization URL, exchanging the OAuth `code` for a token, and constructing an authenticated `*spotify.Client`.
   - In `playlist.go`, implement:
     - `ResolveTracksConcurrently(ctx, client, artistName, songNames)`: Uses `errgroup.WithContext(ctx)` with `g.SetLimit(5)` to query `track:<song> artist:<artist>` in parallel, storing results by index to preserve the exact concert setlist order and gracefully skipping unmatched songs.
     - `CreateAndPopulatePlaylist(ctx, client, userID, playlistName, trackURIs)`: Creates the public playlist with description `"A playlist made with the setlistify.app"`, adds matched tracks, and returns `"spotify:playlist:<id>"`.
 
 ### Phase 3: Vercel Go Serverless Endpoints (`api/*.go`) & Local Dev Server
-- [ ] **Task 3.1: Implement OAuth Endpoints (`api/authUrl.go`, `api/getUser.go`)**
+- [x] **Task 3.1: Implement OAuth Endpoints (`api/authUrl.go`, `api/getUser.go`)**
   - `api/authUrl.go` (`GET /api/authUrl`): Returns `{"authUrl": "..."}` statelessly.
   - `api/getUser.go` (`POST /api/getUser`): Parses `{"code": "..."}`, exchanges code with Spotify, fetches `CurrentUser`, signs JWT, and returns `{"user": ..., "token": "..."}`.
-- [ ] **Task 3.2: Implement Search & Setlist Endpoints (`api/artistSearch.go`, `api/setlistArtists.go`, `api/artistSetlists.go`)**
+- [x] **Task 3.2: Implement Search & Setlist Endpoints (`api/artistSearch.go`, `api/setlistArtists.go`, `api/artistSetlists.go`)**
   - `api/artistSearch.go` (`POST /api/artistSearch`): Decodes JWT, runs Spotify artist search with `query` and `limit`, and returns `{"artists": [...]}`.
   - `api/setlistArtists.go` (`POST /api/setlistArtists`): Queries Setlist.fm artists by relevance and returns `{"artists": [...]}`.
   - `api/artistSetlists.go` (`POST /api/artistSetlists`): Resolves setlists via explicit `artistMbid`, top-3 exact-match candidate check, or fallback `search/setlists`, returning `{"artistSetlists": [...], "artistMbid": "..."}`.
-- [ ] **Task 3.3: Implement Playlist Builder Endpoint (`api/buildPlaylist.go`)**
+- [x] **Task 3.3: Implement Playlist Builder Endpoint (`api/buildPlaylist.go`)**
   - `api/buildPlaylist.go` (`POST /api/buildPlaylist`): Decodes JWT, fetches Setlist.fm setlist by `playlistId` (with fallback to `artistMbid`/`artistName`), runs concurrent track lookups, creates the Spotify playlist, and returns `{"playlistUri": "spotify:playlist:..."}`.
-- [ ] **Task 3.4: Add Local Go Development Server (`cmd/devserver/main.go`)**
+- [x] **Task 3.4: Add Local Go Development Server (`cmd/devserver/main.go`)**
   - Create a lightweight entrypoint that loads `.env` and mounts all 6 `api/*` handlers under `/api/*` on `http://localhost:5000` so local development works either via `vercel dev` or standard `go run ./cmd/devserver` + `yarn start`.
 
 ### Phase 4: Frontend Updates & Vercel Configuration
-- [ ] **Task 4.1: Update API Base URL & Stateless OAuth in Frontend (`src/`)**
+- [x] **Task 4.1: Update API Base URL & Stateless OAuth in Frontend (`src/`)**
   - Update `src/utils/dev_env.ts` so `fetchUrl()` returns `'/api'` across both local development and production on Vercel.
   - Update `src/components/app_routing.tsx` and `src/components/login_handler.tsx` to remove `cachePath` state/props and send `{ code: params.code }` to `POST /api/getUser`.
-- [ ] **Task 4.2: Add `vercel.json` & Update Documentation**
+- [x] **Task 4.2: Add `vercel.json` & Update Documentation**
   - Create `setlistify-app/vercel.json` with:
     - Build command `yarn build` and output directory `build`.
     - Rewrite rules preserving `/api/(.*)` for serverless functions and routing all other paths (`/callback`, `/createPlaylist`, etc.) to `/index.html` for React Router v5.
   - Update `ARCHITECTURE.md` and `README.md` to document the Go + Vercel architecture and local development workflows.
 
 ### Phase 5: Post-Verification Cleanup
-- [ ] **Task 5.1: Remove Legacy Flask & Netlify Files (After Production Verification)**
+- [x] **Task 5.1: Remove Legacy Flask & Netlify Files (After Production Verification)**
   - Once Vercel deployment is verified in production, delete `flask-app/` and `netlify.toml`.
 
 ---

@@ -1,7 +1,5 @@
 import React from 'react';
-import {Card, Icon, Container, Button} from "semantic-ui-react";
-import {useHistory} from "react-router-dom";
-import {fetchUrl} from "../utils/dev_env";
+import {Card, Icon, Container} from "semantic-ui-react";
 
 interface HeaderProps {
   name: string,
@@ -9,30 +7,13 @@ interface HeaderProps {
   setIsLoggedIn: (boolean) => void,
 }
 
-const HeaderCard = ({name, setUser, setIsLoggedIn}: HeaderProps) => {
-  let history = useHistory();
-
-  const handleLogout = () => {
-    fetch(`${fetchUrl()}/logout`, {
-      method: 'get',
-      credentials: 'include',
-    })
-      .then(res => res.json())
-      .then((data) => {
-        setUser(data);
-        setIsLoggedIn(false);
-        history.push('/');
-      })
-  };
+const HeaderCard = ({name}: HeaderProps) => {
   return (
     <Container>
       <Card fluid centered>
         <Card.Content>
           {!!name ? (
-            <>
-              <Card.Header>{name}</Card.Header>
-              {/*<Button circular icon='log out' onClick={handleLogout} />*/}
-            </>
+            <Card.Header>{name}</Card.Header>
           ) : (
             <Icon name='music' size='big' />
           )}

@@ -10,19 +10,9 @@ updates:
     assignees:
       - "alexcaulfield"
 
-  # Flask backend
-  - package-ecosystem: "pip"
-    directory: "/flask-app"
-    schedule:
-      interval: "monthly"
-    labels:
-      - "dependencies"
-    assignees:
-      - "alexcaulfield"
-
-  # Serverless deploy dependencies
-  - package-ecosystem: "pip"
-    directory: "/flask-app/.serverless"
+  # Go backend
+  - package-ecosystem: "gomod"
+    directory: "/"
     schedule:
       interval: "monthly"
     labels:

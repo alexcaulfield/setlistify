@@ -2,15 +2,13 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
-	"github.com/alexcaulfield/setlistify/internal/auth"
-	"github.com/alexcaulfield/setlistify/internal/config"
-	"github.com/alexcaulfield/setlistify/internal/httputil"
-	"github.com/alexcaulfield/setlistify/internal/spotify"
+	"github.com/alexcaulfield/setlistify/pkg/auth"
+	"github.com/alexcaulfield/setlistify/pkg/config"
+	"github.com/alexcaulfield/setlistify/pkg/httputil"
+	"github.com/alexcaulfield/setlistify/pkg/spotify"
 	spotifyclient "github.com/zmb3/spotify/v2"
-	"golang.org/x/oauth2"
 )
 
 type getUserRequest struct {
@@ -23,54 +21,34 @@ type getUserResponse struct {
 	Token string                     `json:"token"`
 }
 
-// GetUser handles POST /api/getUser
-func GetUser(w http.ResponseWriter, r *http.Request) {
-	if httputil.SetCORS(w, r) {
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		httputil.WriteError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "MethodNotAllowed")
-		return
-	}
-
-	cfg := config.Load()
-
-	var req getUserRequest
-	if err := httputil.DecodeJSON(r, &req); err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, err, "BadRequest")
-		return
-	}
-
+func exchangeCodeForUser(ctx context.Context, cfg *config.Config, req getUserRequest) (getUserResponse, error) {
 	if req.Code == "" {
-		httputil.WriteError(w, http.StatusBadRequest, errors.New("code is required"), "BadRequest")
-		return
+		return getUserResponse{}, httputil.NewAPIError(http.StatusBadRequest, "BadRequest", "code is required")
 	}
 
-	ctx := context.Background()
-	svc := spotify.NewService(&cfg)
+	svc := spotify.NewService(cfg)
 	oauthToken, err := svc.Exchange(ctx, req.Code)
 	if err != nil {
-		httputil.WriteError(w, http.StatusUnauthorized, err, "AuthError")
-		return
+		return getUserResponse{}, httputil.WrapAPIError(http.StatusUnauthorized, "AuthError", err)
 	}
 
 	jwtToken, err := auth.EncodeToken(oauthToken, cfg.AppSecretKey)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err, "TokenError")
-		return
+		return getUserResponse{}, httputil.WrapAPIError(http.StatusInternalServerError, "TokenError", err)
 	}
 
-	client := spotifyclient.New(oauth2.NewClient(ctx, oauth2.StaticTokenSource(oauthToken)))
+	client := spotify.NewUserClient(ctx, oauthToken)
 	user, err := client.CurrentUser(ctx)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err, "SpotifyError")
-		return
+		return getUserResponse{}, httputil.WrapAPIError(http.StatusInternalServerError, "SpotifyError", err)
 	}
 
-	_ = httputil.WriteJSON(w, http.StatusOK, getUserResponse{
+	return getUserResponse{
 		User:  user,
 		Token: jwtToken,
-	})
+	}, nil
 }
 
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	httputil.Handle(http.MethodPost, exchangeCodeForUser)(w, r)
+}

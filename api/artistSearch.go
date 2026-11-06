@@ -2,14 +2,13 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
-	"github.com/alexcaulfield/setlistify/internal/auth"
-	"github.com/alexcaulfield/setlistify/internal/config"
-	"github.com/alexcaulfield/setlistify/internal/httputil"
+	"github.com/alexcaulfield/setlistify/pkg/auth"
+	"github.com/alexcaulfield/setlistify/pkg/config"
+	"github.com/alexcaulfield/setlistify/pkg/httputil"
+	"github.com/alexcaulfield/setlistify/pkg/spotify"
 	spotifyclient "github.com/zmb3/spotify/v2"
-	"golang.org/x/oauth2"
 )
 
 type artistSearchRequest struct {
@@ -22,33 +21,13 @@ type artistSearchResponse struct {
 	Artists []spotifyclient.FullArtist `json:"artists"`
 }
 
-// ArtistSearch handles POST /api/artistSearch
-func ArtistSearch(w http.ResponseWriter, r *http.Request) {
-	if httputil.SetCORS(w, r) {
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		httputil.WriteError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "MethodNotAllowed")
-		return
-	}
-
-	cfg := config.Load()
-
-	var req artistSearchRequest
-	if err := httputil.DecodeJSON(r, &req); err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, err, "BadRequest")
-		return
-	}
-
+func searchArtists(ctx context.Context, cfg *config.Config, req artistSearchRequest) (artistSearchResponse, error) {
 	oauthToken, err := auth.DecodeToken(req.Token, cfg.AppSecretKey)
 	if err != nil {
-		httputil.WriteError(w, http.StatusUnauthorized, err, "InvalidToken")
-		return
+		return artistSearchResponse{}, httputil.WrapAPIError(http.StatusUnauthorized, "InvalidToken", err)
 	}
 
-	ctx := context.Background()
-	client := spotifyclient.New(oauth2.NewClient(ctx, oauth2.StaticTokenSource(oauthToken)))
+	client := spotify.NewUserClient(ctx, oauthToken)
 
 	limit := req.Limit
 	if limit <= 0 {
@@ -57,8 +36,7 @@ func ArtistSearch(w http.ResponseWriter, r *http.Request) {
 
 	results, err := client.Search(ctx, "artist:"+req.Query, spotifyclient.SearchTypeArtist, spotifyclient.Limit(limit))
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err, "SpotifyError")
-		return
+		return artistSearchResponse{}, httputil.WrapAPIError(http.StatusInternalServerError, "SpotifyError", err)
 	}
 
 	var artists []spotifyclient.FullArtist
@@ -69,8 +47,11 @@ func ArtistSearch(w http.ResponseWriter, r *http.Request) {
 		artists = []spotifyclient.FullArtist{}
 	}
 
-	_ = httputil.WriteJSON(w, http.StatusOK, artistSearchResponse{
+	return artistSearchResponse{
 		Artists: artists,
-	})
+	}, nil
 }
 
+func ArtistSearch(w http.ResponseWriter, r *http.Request) {
+	httputil.Handle(http.MethodPost, searchArtists)(w, r)
+}
