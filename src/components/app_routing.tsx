@@ -130,17 +130,26 @@ const AppRouting = ({
   isLoggedIn,
   setIsLoggedIn,
 }: AppRoutingProps) => {
+  const routerContext = React.useMemo(
+    () => ({
+      user,
+      setUser,
+      token,
+      setToken,
+      isLoggedIn,
+      setIsLoggedIn,
+    }),
+    [user, setUser, token, setToken, isLoggedIn, setIsLoggedIn]
+  );
+
+  React.useEffect(() => {
+    router.invalidate();
+  }, [user, token, isLoggedIn]);
+
   return (
     <RouterProvider
       router={router}
-      context={{
-        user,
-        setUser,
-        token,
-        setToken,
-        isLoggedIn,
-        setIsLoggedIn,
-      }}
+      context={routerContext}
     />
   );
 };

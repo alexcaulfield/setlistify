@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import LoadingPlaceholder from './loading_placeholder';
 import ErrorMessage from './error_message';
 import { exchangeCodeForUser } from '../api/setlistify';
@@ -12,6 +13,7 @@ interface LoginHandlerProps {
 }
 
 const LoginHandler = ({ handleLogin, setUser, setToken }: LoginHandlerProps) => {
+  const navigate = useNavigate();
   const code = new URLSearchParams(window.location.search).get('code') || '';
 
   const { data, isError, error } = useQuery({
@@ -27,8 +29,9 @@ const LoginHandler = ({ handleLogin, setUser, setToken }: LoginHandlerProps) => 
       setToken(data.token);
       setUser(data.user);
       handleLogin();
+      navigate({ to: '/createPlaylist', replace: true });
     }
-  }, [data, handleLogin, setToken, setUser]);
+  }, [data, handleLogin, setToken, setUser, navigate]);
 
   if (isError) {
     return (
