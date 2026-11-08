@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/alexcaulfield/setlistify/pkg/apitypes"
 	"github.com/alexcaulfield/setlistify/pkg/auth"
 	"github.com/alexcaulfield/setlistify/pkg/config"
 	"github.com/alexcaulfield/setlistify/pkg/httputil"
@@ -11,15 +12,8 @@ import (
 	spotifyclient "github.com/zmb3/spotify/v2"
 )
 
-type artistSearchRequest struct {
-	Token string `json:"token"`
-	Query string `json:"query"`
-	Limit int    `json:"limit,omitempty"`
-}
-
-type artistSearchResponse struct {
-	Artists []spotifyclient.FullArtist `json:"artists"`
-}
+type artistSearchRequest = apitypes.ArtistSearchRequest
+type artistSearchResponse = apitypes.ArtistSearchResponse
 
 func searchArtists(ctx context.Context, cfg *config.Config, req artistSearchRequest) (artistSearchResponse, error) {
 	oauthToken, err := auth.DecodeToken(req.Token, cfg.AppSecretKey)

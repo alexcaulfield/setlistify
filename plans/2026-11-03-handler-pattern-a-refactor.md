@@ -5,7 +5,7 @@
 
 ## 1. Overview
 
-Refactor all 6 Go Vercel serverless handlers (`api/*.go`) to follow **Pattern A: Separate Business Logic from HTTP Transport**. Each handler currently mixes HTTP lifecycle concerns (CORS, method checks, JSON decode/encode, error responses) with core business logic inline. This refactoring:
+Refactor all 6 Go Vercel serverless handlers (`api/*.go`) to follow the **Typed Handler Pattern: Separate Business Logic from HTTP Transport**. Each handler currently mixes HTTP lifecycle concerns (CORS, method checks, JSON decode/encode, error responses) with core business logic inline. This refactoring:
 
 1. **Extracts business logic** into pure, typed functions that accept domain inputs and return `(TypedResponse, error)` — making them independently testable and readable.
 2. **DRYs the shared HTTP boilerplate** (CORS, method guard, config load, JSON decode, JSON response) into a single generic handler adapter.
@@ -179,7 +179,7 @@ type authUrlResponse struct {
 
 ### Phase 5: Global skill
 
-- [x] **Task 5.1:** Create `~/src/.agents/skills/go-vercel-handlers/SKILL.md` documenting the Pattern A convention for Go Vercel serverless handlers.
+- [x] **Task 5.1:** Create `~/src/.agents/skills/go-vercel-handlers/SKILL.md` documenting the Typed Handler Pattern convention for Go Vercel serverless handlers.
 
 ### Phase 6: Documentation
 

@@ -4,22 +4,15 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/alexcaulfield/setlistify/pkg/apitypes"
 	"github.com/alexcaulfield/setlistify/pkg/auth"
 	"github.com/alexcaulfield/setlistify/pkg/config"
 	"github.com/alexcaulfield/setlistify/pkg/httputil"
 	"github.com/alexcaulfield/setlistify/pkg/spotify"
-	spotifyclient "github.com/zmb3/spotify/v2"
 )
 
-type getUserRequest struct {
-	Code      string `json:"code"`
-	CachePath string `json:"cache_path,omitempty"`
-}
-
-type getUserResponse struct {
-	User  *spotifyclient.PrivateUser `json:"user"`
-	Token string                     `json:"token"`
-}
+type getUserRequest = apitypes.GetUserRequest
+type getUserResponse = apitypes.GetUserResponse
 
 func exchangeCodeForUser(ctx context.Context, cfg *config.Config, req getUserRequest) (getUserResponse, error) {
 	if req.Code == "" {

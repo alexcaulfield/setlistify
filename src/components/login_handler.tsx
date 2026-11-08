@@ -1,48 +1,50 @@
-import React, {useEffect} from 'react';
-import LoadingPlaceholder from "./loading_placeholder";
-import {fetchUrl} from "../utils/dev_env";
+import React, { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import LoadingPlaceholder from './loading_placeholder';
+import ErrorMessage from './error_message';
+import { exchangeCodeForUser } from '../api/setlistify';
+import type { SpotifyPrivateUser } from '../api/types.gen';
 
 interface LoginHandlerProps {
-  handleLogin: () => void,
-  setUser: (object: any) => void,
-  setToken: (token: string) => void,
+  handleLogin: () => void;
+  setUser: (user: SpotifyPrivateUser) => void;
+  setToken: (token: string) => void;
 }
 
-const getUrlParams = () => {
-  const vars: { [key: string]: string } = {code: ''};
-  window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (substring, key, value) => {
-    vars[key] = value;
-    return vars.toString();
+const LoginHandler = ({ handleLogin, setUser, setToken }: LoginHandlerProps) => {
+  const code = new URLSearchParams(window.location.search).get('code') || '';
+
+  const { data, isError, error } = useQuery({
+    queryKey: ['getUser', code],
+    queryFn: () => exchangeCodeForUser({ code }),
+    enabled: Boolean(code),
+    staleTime: Infinity,
+    retry: false,
   });
-  return vars;
-};
 
-const LoginHandler = ({handleLogin, setUser, setToken}: LoginHandlerProps) => {
   useEffect(() => {
-    const params = getUrlParams();
-    if (params?.code) {
-      const body = JSON.stringify({
-        code: params.code,
-      });
-      fetch(`${fetchUrl()}/getUser`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: body
-      }).then(res => res.json())
-        .then(({user, token}) => {
-          setToken(token);
-          setUser(user);
-          handleLogin();
-        });
+    if (data?.token && data?.user) {
+      setToken(data.token);
+      setUser(data.user);
+      handleLogin();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [data, handleLogin, setToken, setUser]);
 
-  return (
-    <>
-      <LoadingPlaceholder />
-    </>
-  )
+  if (isError) {
+    return (
+      <ErrorMessage
+        header="Authentication Failed"
+        message={
+          <p>
+            {error instanceof Error ? error.message : 'Could not authenticate with Spotify.'}{' '}
+            Please <a href="/" className="underline">try logging in again</a>.
+          </p>
+        }
+      />
+    );
+  }
+
+  return <LoadingPlaceholder />;
 };
 
 export default LoginHandler;

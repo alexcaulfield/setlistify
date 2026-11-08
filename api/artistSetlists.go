@@ -4,20 +4,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/alexcaulfield/setlistify/pkg/apitypes"
 	"github.com/alexcaulfield/setlistify/pkg/config"
 	"github.com/alexcaulfield/setlistify/pkg/httputil"
 	"github.com/alexcaulfield/setlistify/pkg/setlistfm"
 )
 
-type artistSetlistsRequest struct {
-	ArtistName string `json:"artistName"`
-	ArtistMbid string `json:"artistMbid"`
-}
-
-type artistSetlistsResponse struct {
-	ArtistSetlists []setlistfm.Setlist `json:"artistSetlists"`
-	ArtistMbid     string              `json:"artistMbid,omitempty"`
-}
+type artistSetlistsRequest = apitypes.ArtistSetlistsRequest
+type artistSetlistsResponse = apitypes.ArtistSetlistsResponse
 
 func resolveArtistSetlists(ctx context.Context, cfg *config.Config, req artistSetlistsRequest) (artistSetlistsResponse, error) {
 	client := setlistfm.NewClient(cfg.SetlistFMAPIKey)

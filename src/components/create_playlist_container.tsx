@@ -1,40 +1,50 @@
-import React, {useState} from 'react';
-import {Container, ButtonProps, Button, Icon} from "semantic-ui-react";
-import SearchContainer from "./search_container";
-import ArtistCard from "./artist_card";
-import PlaylistBuilderButtons from "./playlist_builder_buttons";
-import {fetchUrl} from "../utils/dev_env";
+import React, { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import SearchContainer from './search_container';
+import ArtistCard from './artist_card';
+import PlaylistBuilderButtons from './playlist_builder_buttons';
+import { buildPlaylist } from '../api/setlistify';
+import type { SpotifyFullArtist } from '../api/types.gen';
 
 interface CreatePlaylistContainerProps {
-  token: string,
+  token: string;
 }
 
-const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
-  const [selectedArtist, setSelectedArtist] = useState({
-    external_urls: {},
-    followers: {
-      total: 0
-    },
-    genres: [],
-    href: '',
-    id: '',
-    images: [],
-    name: '',
-    popularity: 0,
-    type: '',
-    uri: ''
-  });
+const SpotifyIcon = () => (
+  <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.48.66.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+  </svg>
+);
+
+const emptyArtist: SpotifyFullArtist = {
+  name: '',
+  id: '',
+  uri: '',
+  href: '',
+  external_urls: {},
+  popularity: 0,
+  genres: [],
+  followers: { total: 0, href: '' },
+  images: [],
+};
+
+const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
+  const [selectedArtist, setSelectedArtist] = useState<SpotifyFullArtist>(emptyArtist);
   const [playlistUrl, setPlaylistUrl] = useState('');
-  // set concert to Setlistify
   const [concertId, setConcertId] = useState('');
-  // resolved setlist.fm artist MBID — ensures exact artist match when building playlists
   const [artistMbid, setArtistMbid] = useState('');
 
-  const handleCreatePlaylist = (playlistType) => (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    data: ButtonProps
-  )  => {
-    const body = JSON.stringify({
+  const buildMutation = useMutation({
+    mutationFn: buildPlaylist,
+    onSuccess: (data) => {
+      if (data?.playlistUri) {
+        setPlaylistUrl(data.playlistUri);
+      }
+    },
+  });
+
+  const handleCreatePlaylist = (playlistType: string) => () => {
+    buildMutation.mutate({
       artistName: selectedArtist.name,
       artistId: selectedArtist.id,
       playlistType: playlistType,
@@ -42,21 +52,10 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
       playlistId: concertId,
       artistMbid: artistMbid,
     });
-    fetch(`${fetchUrl()}/buildPlaylist`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: body
-    })
-      .then(res => res.json())
-      .then((data) => {
-        if (data?.playlistUri) {
-          setPlaylistUrl(data.playlistUri);
-        }
-      })
   };
 
   return (
-    <Container>
+    <div className="mx-auto max-w-2xl px-4 py-6">
       <SearchContainer
         setSelectedArtist={setSelectedArtist}
         setPlaylistUrl={setPlaylistUrl}
@@ -64,34 +63,50 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
         setConcertId={setConcertId}
         setArtistMbid={setArtistMbid}
       />
+
       <PlaylistBuilderButtons
-        artistSelected={!!selectedArtist.name && !!concertId}
+        artistSelected={Boolean(selectedArtist.name && concertId)}
         onCreatePlaylist={handleCreatePlaylist}
       />
-      {selectedArtist.name && (
-        <>
+
+      {buildMutation.isPending && (
+        <p className="mt-4 text-center text-sm font-medium text-gray-500">
+          Building your playlist...
+        </p>
+      )}
+
+      {buildMutation.isError && (
+        <p className="mt-4 text-center text-sm font-medium text-red-600">
+          Error creating playlist. Please try again.
+        </p>
+      )}
+
+      {Boolean(selectedArtist.name) && (
+        <div className="mt-6 space-y-6">
           <ArtistCard
-            artistImg={selectedArtist.images[0]}
+            artistImg={selectedArtist.images?.[0]}
             artistName={selectedArtist.name}
-            artistFollowers={selectedArtist.followers}
-            artistGenre={selectedArtist.genres[0]}
+            artistFollowers={selectedArtist.followers ?? { total: 0 }}
+            artistGenre={selectedArtist.genres?.[0] ?? ''}
           />
-          {!!playlistUrl && (
-            <div style={{
-              marginTop: '2vh'
-            }}>
-              <a href={playlistUrl} target="_blank" rel="noopener noreferrer">
-                <Button>
-                  <Icon name='spotify' />
-                  Check out your playlist
-                </Button>
+
+          {Boolean(playlistUrl) && (
+            <div className="flex justify-center">
+              <a
+                href={playlistUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-6 py-3 font-semibold text-white shadow-md transition hover:bg-[#1ed760] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1DB954]"
+              >
+                <SpotifyIcon />
+                <span>Check out your playlist</span>
               </a>
             </div>
           )}
-        </>
+        </div>
       )}
-    </Container>
-  )
+    </div>
+  );
 };
 
 export default CreatePlaylistContainer;
