@@ -10,7 +10,7 @@ on:
 
 jobs:
   go-test:
-    name: Go Test, Vet & Type Generation Check
+    name: Go Test & Vet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
