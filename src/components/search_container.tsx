@@ -32,10 +32,19 @@ function formatSetlists(artistSetlists: Setlist[]): FormattedSetlistOption[] {
         const venueCity = setlist?.venue?.city?.name || 'Unknown City';
         const venueCountry = setlist?.venue?.city?.country?.name || '';
         const location = venueCountry ? `${venueCity}, ${venueCountry}` : venueCity;
-        const formattedDate =
-          dateSplit.length === 3
-            ? `${dateSplit[0]}/${dateSplit[1]}/${dateSplit[2]}`
-            : setlist?.eventDate || '';
+
+        let formattedDate = setlist?.eventDate || '';
+        if (dateSplit.length === 3) {
+          const [day, month, year] = dateSplit.map(Number);
+          const dateObj = new Date(year, month - 1, day);
+          if (!isNaN(dateObj.getTime())) {
+            formattedDate = dateObj.toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            });
+          }
+        }
 
         acc.push({
           text: `${formattedDate} - ${location} - ${totalSongs} Songs`,
