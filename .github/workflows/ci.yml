@@ -29,8 +29,8 @@ jobs:
 
       - name: Verify Generated Types In Sync
         run: |
-          go run ./cmd/gentypes
-          git diff --exit-code src/api/types.gen.ts
+          go run github.com/gzuidhof/tygo generate
+          git diff --exit-code src/api/*.gen.ts
 
   frontend:
     name: Frontend Test & Build

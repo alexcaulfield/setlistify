@@ -7,7 +7,7 @@ A platform for you to prep for concerts - find an artist you're seeing soon, and
 
 * **Frontend**: Vite 6, React 19, TanStack Router (code-based), TanStack Query v5, Tailwind CSS v4, Lucide React icons, TypeScript
 * **Backend**: Go (Serverless Functions on Vercel), Typed Handler Pattern, Spotify Web API (`zmb3/spotify/v2`), Setlist.fm API, HS256 JWT auth
-* **Type Safety**: Go reflection generator (`cmd/gentypes`) auto-generates frontend TypeScript types (`src/api/types.gen.ts`) directly from backend Go DTOs
+* **Type Safety**: AST type generator (`tygo`) auto-generates frontend TypeScript types (`src/api/*.gen.ts`) directly from backend Go DTOs
 * **Infrastructure & Hosting**: Vercel (monorepo hosting Vite SPA static build + Go serverless functions in `/api`)
 
 ### Current Features
@@ -101,7 +101,7 @@ This reflects over `pkg/apitypes`, `pkg/setlistfm`, and `github.com/zmb3/spotify
 go test -v ./...
 
 # Verify generated types are in sync
-go run ./cmd/gentypes && git diff --exit-code src/api/types.gen.ts
+go run github.com/gzuidhof/tygo generate && git diff --exit-code src/api/*.gen.ts
 
 # Run frontend Vitest unit tests
 yarn test

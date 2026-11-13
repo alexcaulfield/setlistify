@@ -15,7 +15,7 @@ flowchart LR
 
     subgraph Backend["Go API (Vercel Serverless Functions)"]
         API["api/*.go\n(Typed Handler Pattern)"]
-        GenTypes["cmd/gentypes\n(Type Reflection Generator)"]
+        GenTypes["tygo\n(AST Type Generator)"]
         ApiTypes["pkg/apitypes\n(Exported API DTOs)"]
         SpotifyPkg["pkg/spotify\n(zmb3/spotify/v2)"]
         SetlistPkg["pkg/setlistfm\n(Setlist.fm Client)"]
@@ -30,8 +30,8 @@ flowchart LR
     UI --> Router
     Router --> Query
     Query --> ApiClient
-    GenTypes -. "generates src/api/types.gen.ts" .-> ApiClient
-    GenTypes -. "reflects over" .-> ApiTypes
+    GenTypes -. "generates src/api/*.gen.ts" .-> ApiClient
+    GenTypes -. "parses" .-> ApiTypes
     ApiClient -- "REST / JSON (/api/*)" --> API
     API --> SpotifyPkg
     API --> SetlistPkg
@@ -50,7 +50,7 @@ flowchart LR
 * **Framework**: React 19 (`^19.0.0`)
 * **Routing**: TanStack Router (`@tanstack/react-router` `^1.111.0`, code-based routing)
 * **Server State Management**: TanStack Query v5 (`@tanstack/react-query` `^5.66.0`)
-* **Type Generation**: Go reflection generator (`cmd/gentypes`) emitting `src/api/types.gen.ts`
+* **Type Generation**: AST type generator (`tygo`) emitting `src/api/*.gen.ts`
 * **UI Styling**: Tailwind CSS v4 (`@tailwindcss/vite`) + native HTML elements + `lucide-react` icons
 * **Testing**: Vitest (`^3.0.5`) + Testing Library (`@testing-library/react` `^16.2.0`, `jsdom`)
 * **Runtime & Package Management**: Node.js 22 (`.nvmrc`), Yarn 4 (`yarn@4.17.0`)
@@ -63,7 +63,7 @@ flowchart LR
   * `github.com/zmb3/spotify/v2` & `golang.org/x/oauth2` — Spotify OAuth2 and Web API client
   * Native HTTP client for Setlist.fm REST API (`pkg/setlistfm`)
 * **Local Dev Server**: `cmd/devserver/main.go`
-* **Type Generator**: `cmd/gentypes/main.go`
+* **Type Generator**: `tygo` (configured via `tygo.yaml`)
 
 ### Hosting & Infrastructure
 * **Vercel Monorepo**: Hosts both the frontend static build and the backend Go serverless functions under `https://www.setlistify.app`.
@@ -91,10 +91,10 @@ Routing is managed in `src/components/app_routing.tsx` using `@tanstack/react-ro
    * Protected by `isLoggedIn` router context (redirects to `/` if unauthenticated).
    * Renders `<CreatePlaylistContainer token={token} />`.
 
-### 2. Auto-Synced Backend & Frontend Types (`cmd/gentypes`)
-Backend API request and response DTO structs are declared in `pkg/apitypes/types.go`.
-Running `yarn gen:types` (`go run ./cmd/gentypes`) uses Go reflection to walk the Go struct hierarchy (including nested types from `pkg/setlistfm` and `github.com/zmb3/spotify/v2`) and emit `src/api/types.gen.ts`.
-Zero type drift is enforced in CI via `go run ./cmd/gentypes && git diff --exit-code src/api/types.gen.ts`.
+### 2. Auto-Synced Backend & Frontend Types (`tygo`)
+Backend API request and response DTO structs are declared in `pkg/apitypes/types.go` and `pkg/apitypes/spotify.go`.
+Running `yarn gen:types` (`go run github.com/gzuidhof/tygo generate`) parses the Go package ASTs (including nested types from `pkg/setlistfm`) and emits `src/api/*.gen.ts`.
+Zero type drift is enforced in CI via `go run github.com/gzuidhof/tygo generate && git diff --exit-code src/api/*.gen.ts`.
 
 ### 3. Artist Search & Setlist Disambiguation
 Because artist names on Spotify and Setlist.fm can collide across multiple acts or venues:
@@ -152,8 +152,7 @@ setlistify-app/
 │   ├── setlistArtists.go
 │   └── handlers_test.go
 ├── cmd/
-│   ├── devserver/                     # Local standalone Go dev server
-│   └── gentypes/                      # TypeScript type generation from Go DTO structs
+│   └── devserver/                     # Local standalone Go dev server
 ├── pkg/
 │   ├── apitypes/                      # Shared Go API request/response DTOs
 │   ├── auth/                          # JWT token encoding & decoding
@@ -163,9 +162,11 @@ setlistify-app/
 │   └── spotify/                       # Spotify service, user client, & playlist creation
 ├── plans/                             # Feature and refactoring plans
 ├── index.html                         # Vite root HTML entry point
+├── tygo.yaml                          # Tygo TypeScript type generation config
 ├── src/
 │   ├── api/
-│   │   ├── types.gen.ts               # Auto-generated TypeScript types (via cmd/gentypes)
+│   │   ├── setlistfm.gen.ts           # Auto-generated Setlist.fm TypeScript types (via tygo)
+│   │   ├── types.gen.ts               # Auto-generated API DTO TypeScript types (via tygo)
 │   │   └── setlistify.ts              # Typed API client fetch functions
 │   ├── components/
 │   │   ├── app_routing.tsx            # TanStack Router routes & TanStack Query authUrl fetch

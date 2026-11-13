@@ -32,9 +32,9 @@ Migrate the Setlistify frontend (`src/`) from its legacy Create React App (`reac
   - **Callback Route (`path: '/callback'`):** Uses `validateSearch` to type-safely parse `?code=...` from the query string (replacing the manual regex `getUrlParams` in [`src/components/login_handler.tsx`](file:///Users/alexcaulfield/src/setlistify/src/components/login_handler.tsx#L11-L18)). Renders [`LoginHandler`](file:///Users/alexcaulfield/src/setlistify/src/components/login_handler.tsx) when `!isLoggedIn`, or `<Navigate to="/createPlaylist" />` once logged in.
   - **Create Playlist Route (`path: '/createPlaylist'`):** Renders [`CreatePlaylistContainer`](file:///Users/alexcaulfield/src/setlistify/src/components/create_playlist_container.tsx) when `isLoggedIn`, or `<Navigate to="/" />` when unauthenticated.
 
-### 2.3 Server State with `@tanstack/react-query` v5 & Auto-Synced Backend Types (`cmd/gentypes`)
-- Export all Go API request/response DTO structs from `api/*.go` into a shared `pkg/apitypes` package (`AuthUrlResponse`, `GetUserRequest`, `GetUserResponse`, `ArtistSearchRequest`, `ArtistSearchResponse`, `ArtistSetlistsRequest`, `ArtistSetlistsResponse`, `BuildPlaylistRequest`, `BuildPlaylistResponse`) and add a lightweight Go reflection generator at `cmd/gentypes/main.go` that emits `src/api/types.gen.ts` (including nested [`setlistfm.Setlist`](file:///Users/alexcaulfield/src/setlistify/pkg/setlistfm/types.go#L64-L73) and `github.com/zmb3/spotify/v2` structs).
-- Wire `"gen:types": "go run ./cmd/gentypes"` into [`package.json`](file:///Users/alexcaulfield/src/setlistify/package.json) and enforce zero type drift in [`.github/workflows/ci.yml`](file:///Users/alexcaulfield/src/setlistify/.github/workflows/ci.yml) (`go run ./cmd/gentypes && git diff --exit-code src/api/types.gen.ts`).
+### 2.3 Server State with `@tanstack/react-query` v5 & Auto-Synced Backend Types (`tygo`)
+- Export all Go API request/response DTO structs from `api/*.go` into a shared `pkg/apitypes` package (`AuthUrlResponse`, `GetUserRequest`, `GetUserResponse`, `ArtistSearchRequest`, `ArtistSearchResponse`, `ArtistSetlistsRequest`, `ArtistSetlistsResponse`, `BuildPlaylistRequest`, `BuildPlaylistResponse`) and use `tygo` (configured via `tygo.yaml`) to emit `src/api/*.gen.ts` (including nested [`setlistfm.Setlist`](file:///Users/alexcaulfield/src/setlistify/pkg/setlistfm/types.go#L64-L73) and Spotify DTO structs).
+- Wire `"gen:types": "go run github.com/gzuidhof/tygo generate"` into [`package.json`](file:///Users/alexcaulfield/src/setlistify/package.json) and enforce zero type drift in [`.github/workflows/ci.yml`](file:///Users/alexcaulfield/src/setlistify/.github/workflows/ci.yml) (`go run github.com/gzuidhof/tygo generate && git diff --exit-code src/api/*.gen.ts`).
 - Wrap the application in `QueryClientProvider` in [`src/App.tsx`](file:///Users/alexcaulfield/src/setlistify/src/App.tsx).
 - Centralize typed fetch functions in `src/api/setlistify.ts` (consuming the generated types from `src/api/types.gen.ts`) and consume them through TanStack Query's two core primitives:
   - **Reads (`useQuery`):**
@@ -63,7 +63,7 @@ Migrate the Setlistify frontend (`src/`) from its legacy Create React App (`reac
   - Upgrade `react` and `react-dom` to `^19.0.0` (with `@types/react` and `@types/react-dom` `^19.0.0`) and `typescript` to `^5.7.0`.
   - Add runtime dependencies: `@tanstack/react-query`, `@tanstack/react-router`, `lucide-react`.
   - Add dev/build dependencies: `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`, `vitest`, `jsdom`, `@testing-library/react` (`^16.2.0`), `@testing-library/jest-dom` (`^6.6.3`), `@testing-library/user-event`.
-  - Update scripts: `"gen:types": "go run ./cmd/gentypes"`, `"start": "vite"`, `"build": "tsc -b && vite build"`, `"test": "vitest run"`.
+  - Update scripts: `"gen:types": "go run github.com/gzuidhof/tygo generate"`, `"start": "vite"`, `"build": "tsc -b && vite build"`, `"test": "vitest run"`.
 - [x] 🤖 **Task 1.2: Move & Update `index.html` and Create `vite.config.ts`**
   - Move [`public/index.html`](file:///Users/alexcaulfield/src/setlistify/public/index.html) to root `index.html`, remove the Semantic UI CDN stylesheet `<link>`, replace `%PUBLIC_URL%` with `/`, and add `<script type="module" src="/src/index.tsx"></script>`.
   - Create `vite.config.ts` configuring `@vitejs/plugin-react`, `@tailwindcss/vite`, `server: { host: '127.0.0.1', port: 3000, proxy: { '/api': 'http://localhost:5001' } }`, `build: { outDir: 'build' }`, and `test: { environment: 'jsdom', globals: true, setupFiles: './src/setupTests.ts' }`.
@@ -75,10 +75,10 @@ Migrate the Setlistify frontend (`src/`) from its legacy Create React App (`reac
 ---
 
 ### Phase 2: API Client, TanStack Query & TanStack Router
-- [x] 🤖 / 🧑‍💻 **Task 2.1: Auto-Generate Backend Types (`pkg/apitypes` + `cmd/gentypes`) & Create Typed API Client (`src/api/setlistify.ts`)**
+- [x] 🤖 / 🧑‍💻 **Task 2.1: Auto-Generate Backend Types (`pkg/apitypes` + `tygo`) & Create Typed API Client (`src/api/setlistify.ts`)**
   - **Agent part:**
     1. Extract the Go request/response DTO structs from `api/*.go` into `pkg/apitypes/types.go` so they can be imported by both `api/*.go` and the generator.
-    2. Build `cmd/gentypes/main.go` using Go `reflect` to walk the `pkg/apitypes`, [`pkg/setlistfm`](file:///Users/alexcaulfield/src/setlistify/pkg/setlistfm/types.go), and `github.com/zmb3/spotify/v2` structs and auto-generate `src/api/types.gen.ts`.
+    2. Configure `tygo.yaml` using `tygo` to parse the `pkg/apitypes` and [`pkg/setlistfm`](file:///Users/alexcaulfield/src/setlistify/pkg/setlistfm/types.go) structs and auto-generate `src/api/*.gen.ts`.
     3. Scaffold `src/api/setlistify.ts` importing the generated DTOs from `src/api/types.gen.ts` and implementing the initial fetch helpers (`fetchAuthUrl`, `exchangeCodeForUser`, `searchArtists`).
   - **🧑‍💻 Manual Contribution Opportunity:** Write `fetchArtistSetlists` (`POST /api/artistSetlists`) and `buildPlaylist` (`POST /api/buildPlaylist`) in `src/api/setlistify.ts` using the generated `ArtistSetlistsRequest`/`ArtistSetlistsResponse` and `BuildPlaylistRequest`/`BuildPlaylistResponse` types from `src/api/types.gen.ts`.
 - [x] 🤖 / 🧑‍💻 **Task 2.2: Migrate [`src/App.tsx`](file:///Users/alexcaulfield/src/setlistify/src/App.tsx) and [`src/components/app_routing.tsx`](file:///Users/alexcaulfield/src/setlistify/src/components/app_routing.tsx) to TanStack Router & Query**
@@ -134,7 +134,7 @@ Migrate the Setlistify frontend (`src/`) from its legacy Create React App (`reac
   - Update `src/setupTests.ts` to import `@testing-library/jest-dom/vitest`.
   - Update [`src/App.test.tsx`](file:///Users/alexcaulfield/src/setlistify/src/App.test.tsx) to work with Vitest, React 19, and mocked `/api/authUrl` fetch.
 - [x] 🤖 **Task 4.2: Update CI & Vercel Config**
-  - Update [`.github/workflows/ci.yml`](file:///Users/alexcaulfield/src/setlistify/.github/workflows/ci.yml) to verify generated TypeScript types are in sync (`go run ./cmd/gentypes && git diff --exit-code src/api/types.gen.ts`) and update line 48 from `yarn test --watchAll=false` to `yarn test`.
+  - Update [`.github/workflows/ci.yml`](file:///Users/alexcaulfield/src/setlistify/.github/workflows/ci.yml) to verify generated TypeScript types are in sync (`go run github.com/gzuidhof/tygo generate && git diff --exit-code src/api/*.gen.ts`) and update line 48 from `yarn test --watchAll=false` to `yarn test`.
   - Update [`vercel.json`](file:///Users/alexcaulfield/src/setlistify/vercel.json) `buildCommand` to `yarn build`.
 - [x] 🤖 **Task 4.3: Update [`ARCHITECTURE.md`](file:///Users/alexcaulfield/src/setlistify/ARCHITECTURE.md) and [`README.md`](file:///Users/alexcaulfield/src/setlistify/README.md)**
   - Update the Frontend Technology Stack, Mermaid diagram, and test instructions in [`ARCHITECTURE.md`](file:///Users/alexcaulfield/src/setlistify/ARCHITECTURE.md) and [`README.md`](file:///Users/alexcaulfield/src/setlistify/README.md) to reflect Vite, React 19, TanStack Router, TanStack Query, Tailwind CSS v4, and Vitest.

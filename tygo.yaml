@@ -1,0 +1,16 @@
+packages:
+  - path: "github.com/alexcaulfield/setlistify/pkg/setlistfm"
+    output_path: "src/api/setlistfm.gen.ts"
+    include_files:
+      - "types.go"
+
+  - path: "github.com/alexcaulfield/setlistify/pkg/apitypes"
+    output_path: "src/api/types.gen.ts"
+    frontmatter: |
+      import type { Artist, Setlist } from './setlistfm.gen';
+      export * from './setlistfm.gen';
+    type_mappings:
+      "spotifyclient.PrivateUser": "SpotifyPrivateUser"
+      "spotifyclient.FullArtist": "SpotifyFullArtist"
+      "setlistfm.Artist": "Artist"
+      "setlistfm.Setlist": "Setlist"

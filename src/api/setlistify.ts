@@ -43,10 +43,6 @@ export async function searchArtists(req: ArtistSearchRequest): Promise<ArtistSea
   return res.json();
 }
 
-/**
- * 🧑‍💻 [Manual Contribution Opportunity]
- * Implement fetchArtistSetlists by POSTing req to `${fetchUrl()}/artistSetlists`.
- */
 export async function fetchArtistSetlists(
   req: ArtistSetlistsRequest
 ): Promise<ArtistSetlistsResponse> {
@@ -61,10 +57,6 @@ export async function fetchArtistSetlists(
   return res.json();
 }
 
-/**
- * 🧑‍💻 [Manual Contribution Opportunity]
- * Implement buildPlaylist by POSTing req to `${fetchUrl()}/buildPlaylist`.
- */
 export async function buildPlaylist(
   req: BuildPlaylistRequest
 ): Promise<BuildPlaylistResponse> {

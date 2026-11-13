@@ -7,7 +7,7 @@
     "start": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",
-    "gen:types": "go run ./cmd/gentypes"
+    "gen:types": "go run github.com/gzuidhof/tygo generate"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.0",
