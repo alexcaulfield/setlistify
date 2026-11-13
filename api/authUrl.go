@@ -4,15 +4,13 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/alexcaulfield/setlistify/pkg/apitypes"
 	"github.com/alexcaulfield/setlistify/pkg/config"
 	"github.com/alexcaulfield/setlistify/pkg/httputil"
 	"github.com/alexcaulfield/setlistify/pkg/spotify"
 )
 
-type authUrlResponse struct {
-	AuthURL   string `json:"authUrl"`
-	CachePath string `json:"cachePath"` // backwards compat, always ""
-}
+type authUrlResponse = apitypes.AuthUrlResponse
 
 func getAuthURL(_ context.Context, cfg *config.Config, _ struct{}) (authUrlResponse, error) {
 	if cfg.SpotifyClientID == "" {

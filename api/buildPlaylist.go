@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/alexcaulfield/setlistify/pkg/apitypes"
 	"github.com/alexcaulfield/setlistify/pkg/auth"
 	"github.com/alexcaulfield/setlistify/pkg/config"
 	"github.com/alexcaulfield/setlistify/pkg/httputil"
@@ -13,18 +14,8 @@ import (
 	"github.com/alexcaulfield/setlistify/pkg/spotify"
 )
 
-type buildPlaylistRequest struct {
-	Token        string `json:"token"`
-	ArtistName   string `json:"artistName"`
-	ArtistID     string `json:"artistId,omitempty"`
-	ArtistMBID   string `json:"artistMbid,omitempty"`
-	PlaylistType string `json:"playlistType"`
-	PlaylistID   string `json:"playlistId"`
-}
-
-type buildPlaylistResponse struct {
-	PlaylistURI string `json:"playlistUri,omitempty"`
-}
+type buildPlaylistRequest = apitypes.BuildPlaylistRequest
+type buildPlaylistResponse = apitypes.BuildPlaylistResponse
 
 func buildPlaylist(ctx context.Context, cfg *config.Config, req buildPlaylistRequest) (buildPlaylistResponse, error) {
 	oauthToken, err := auth.DecodeToken(req.Token, cfg.AppSecretKey)

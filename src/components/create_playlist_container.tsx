@@ -1,40 +1,45 @@
-import React, {useState} from 'react';
-import {Container, ButtonProps, Button, Icon} from "semantic-ui-react";
-import SearchContainer from "./search_container";
-import ArtistCard from "./artist_card";
-import PlaylistBuilderButtons from "./playlist_builder_buttons";
-import {fetchUrl} from "../utils/dev_env";
+import React, { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import SearchContainer from './search_container';
+import ArtistCard from './artist_card';
+import PlaylistBuilderButtons from './playlist_builder_buttons';
+import { buildPlaylist } from '../api/setlistify';
+import type { SpotifyFullArtist } from '../api/types.gen';
+import { SpotifyIcon } from './spotify_icon';
 
 interface CreatePlaylistContainerProps {
-  token: string,
+  token: string;
 }
 
-const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
-  const [selectedArtist, setSelectedArtist] = useState({
-    external_urls: {},
-    followers: {
-      total: 0
-    },
-    genres: [],
-    href: '',
-    id: '',
-    images: [],
-    name: '',
-    popularity: 0,
-    type: '',
-    uri: ''
-  });
+const emptyArtist: SpotifyFullArtist = {
+  name: '',
+  id: '',
+  uri: '',
+  href: '',
+  external_urls: {},
+  popularity: 0,
+  genres: [],
+  followers: { total: 0, href: '' },
+  images: [],
+};
+
+const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
+  const [selectedArtist, setSelectedArtist] = useState<SpotifyFullArtist>(emptyArtist);
   const [playlistUrl, setPlaylistUrl] = useState('');
-  // set concert to Setlistify
   const [concertId, setConcertId] = useState('');
-  // resolved setlist.fm artist MBID — ensures exact artist match when building playlists
   const [artistMbid, setArtistMbid] = useState('');
 
-  const handleCreatePlaylist = (playlistType) => (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    data: ButtonProps
-  )  => {
-    const body = JSON.stringify({
+  const buildMutation = useMutation({
+    mutationFn: buildPlaylist,
+    onSuccess: (data) => {
+      if (data?.playlistUri) {
+        setPlaylistUrl(data.playlistUri);
+      }
+    },
+  });
+
+  const handleCreatePlaylist = (playlistType: string) => () => {
+    buildMutation.mutate({
       artistName: selectedArtist.name,
       artistId: selectedArtist.id,
       playlistType: playlistType,
@@ -42,21 +47,10 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
       playlistId: concertId,
       artistMbid: artistMbid,
     });
-    fetch(`${fetchUrl()}/buildPlaylist`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: body
-    })
-      .then(res => res.json())
-      .then((data) => {
-        if (data?.playlistUri) {
-          setPlaylistUrl(data.playlistUri);
-        }
-      })
   };
 
   return (
-    <Container>
+    <div className="mx-auto max-w-2xl px-4 py-6">
       <SearchContainer
         setSelectedArtist={setSelectedArtist}
         setPlaylistUrl={setPlaylistUrl}
@@ -64,34 +58,50 @@ const CreatePlaylistContainer = ({token}: CreatePlaylistContainerProps) => {
         setConcertId={setConcertId}
         setArtistMbid={setArtistMbid}
       />
+
       <PlaylistBuilderButtons
-        artistSelected={!!selectedArtist.name && !!concertId}
+        artistSelected={Boolean(selectedArtist.name && concertId)}
         onCreatePlaylist={handleCreatePlaylist}
       />
-      {selectedArtist.name && (
-        <>
+
+      {buildMutation.isPending && (
+        <p className="mt-4 text-center text-sm font-medium text-gray-500">
+          Building your playlist...
+        </p>
+      )}
+
+      {buildMutation.isError && (
+        <p className="mt-4 text-center text-sm font-medium text-red-600">
+          Error creating playlist. Please try again.
+        </p>
+      )}
+
+      {Boolean(selectedArtist.name) && (
+        <div className="mt-6 space-y-6">
           <ArtistCard
-            artistImg={selectedArtist.images[0]}
+            artistImg={selectedArtist.images?.[0]}
             artistName={selectedArtist.name}
-            artistFollowers={selectedArtist.followers}
-            artistGenre={selectedArtist.genres[0]}
+            artistFollowers={selectedArtist.followers ?? { total: 0 }}
+            artistGenre={selectedArtist.genres?.[0] ?? ''}
           />
-          {!!playlistUrl && (
-            <div style={{
-              marginTop: '2vh'
-            }}>
-              <a href={playlistUrl} target="_blank" rel="noopener noreferrer">
-                <Button>
-                  <Icon name='spotify' />
-                  Check out your playlist
-                </Button>
+
+          {Boolean(playlistUrl) && (
+            <div className="flex justify-center">
+              <a
+                href={playlistUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-6 py-3 font-semibold text-white shadow-md transition hover:bg-[#1ed760] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1DB954]"
+              >
+                <SpotifyIcon />
+                <span>Check out your playlist</span>
               </a>
             </div>
           )}
-        </>
+        </div>
       )}
-    </Container>
-  )
+    </div>
+  );
 };
 
 export default CreatePlaylistContainer;

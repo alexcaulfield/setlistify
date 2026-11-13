@@ -1,102 +1,157 @@
-import React, {useEffect, useState} from 'react';
-import { Redirect, Route, Switch } from 'react-router-dom';
-import NotFound from "./not_found";
-import Login from "./login";
-import LoadingPlaceholder from "./loading_placeholder";
-import LoginHandler from "./login_handler";
-import CreatePlaylistContainer from "./create_playlist_container";
-import {fetchUrl} from "../utils/dev_env";
+import React from 'react';
+import {
+  createRouter,
+  createRoute,
+  createRootRouteWithContext,
+  RouterProvider,
+  Navigate,
+  Outlet,
+} from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import NotFound from './not_found';
+import Login from './login';
+import LoadingPlaceholder from './loading_placeholder';
+import LoginHandler from './login_handler';
+import CreatePlaylistContainer from './create_playlist_container';
+import { fetchAuthUrl } from '../api/setlistify';
+import type { SpotifyPrivateUser } from '../api/types.gen';
 
-export interface ImageType {
-  height: number,
-  width: number,
-  url: string,
+export interface RouterContext {
+  user: SpotifyPrivateUser | null;
+  setUser: (user: SpotifyPrivateUser) => void;
+  token: string;
+  setToken: (token: string) => void;
+  isLoggedIn: boolean;
+  setIsLoggedIn: (loggedIn: boolean) => void;
 }
 
-export interface UserType {
-  display_name: string,
-  external_urls: {
-    spotify: string
-  },
-  followers: {
-    href: string | null,
-    total: number,
-  },
-  href: string,
-  id: string,
-  images: [ImageType],
-  type: string,
-  uri: string,
+const rootRoute = createRootRouteWithContext<RouterContext>()({
+  component: () => <Outlet />,
+  notFoundComponent: NotFound,
+});
+
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: IndexPage,
+});
+
+function IndexPage() {
+  const { isLoggedIn } = indexRoute.useRouteContext();
+  const { data, isLoading } = useQuery({
+    queryKey: ['authUrl'],
+    queryFn: fetchAuthUrl,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  if (isLoggedIn) {
+    return null;
+  }
+
+  if (isLoading) {
+    return <LoadingPlaceholder />;
+  }
+
+  return <Login authUrl={data?.authUrl ?? ''} />;
+}
+
+interface CallbackSearchParams {
+  code?: string;
+}
+
+const callbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/callback',
+  validateSearch: (search: Record<string, unknown>): CallbackSearchParams => ({
+    code: typeof search.code === 'string' ? search.code : undefined,
+  }),
+  component: CallbackPage,
+});
+
+function CallbackPage() {
+  const { isLoggedIn, setIsLoggedIn, setUser, setToken } = callbackRoute.useRouteContext();
+
+  if (isLoggedIn) {
+    return <Navigate to="/createPlaylist" />;
+  }
+
+  return (
+    <LoginHandler
+      handleLogin={() => setIsLoggedIn(true)}
+      setUser={setUser}
+      setToken={setToken}
+    />
+  );
+}
+
+const createPlaylistRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/createPlaylist',
+  component: CreatePlaylistPage,
+});
+
+function CreatePlaylistPage() {
+  const { isLoggedIn, token } = createPlaylistRoute.useRouteContext();
+
+  if (!isLoggedIn) {
+    return <Navigate to="/" />;
+  }
+
+  return <CreatePlaylistContainer token={token} />;
+}
+
+const routeTree = rootRoute.addChildren([indexRoute, callbackRoute, createPlaylistRoute]);
+
+export const router = createRouter({
+  routeTree,
+  context: undefined!, // Provided via RouterProvider context prop
+});
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
 }
 
 interface AppRoutingProps {
-  user: UserType | {},
-  setUser: (user: any) => void,
-  isLoggedIn: boolean,
-  setIsLoggedIn: (loggedIn: boolean) => void,
+  user: SpotifyPrivateUser | null;
+  setUser: (user: SpotifyPrivateUser) => void;
+  token: string;
+  setToken: (token: string) => void;
+  isLoggedIn: boolean;
+  setIsLoggedIn: (loggedIn: boolean) => void;
 }
 
-const AppRouting = ({user, setUser, isLoggedIn, setIsLoggedIn}: AppRoutingProps) => {
-  const [authUrl, setAuthUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [token, setToken] = useState('');
+const AppRouting = ({
+  user,
+  setUser,
+  token,
+  setToken,
+  isLoggedIn,
+  setIsLoggedIn,
+}: AppRoutingProps) => {
+  const routerContext = React.useMemo(
+    () => ({
+      user,
+      setUser,
+      token,
+      setToken,
+      isLoggedIn,
+      setIsLoggedIn,
+    }),
+    [user, setUser, token, setToken, isLoggedIn, setIsLoggedIn]
+  );
 
-  useEffect(() => {
-    fetch(`${fetchUrl()}/authUrl`)
-      .then(response => response.json())
-      .then(({authUrl}) => {
-        if (authUrl) {
-          setAuthUrl(authUrl);
-          setIsLoading(false);
-        }
-      })
-      .catch(err => {
-        console.error("Failed to fetch authUrl:", err);
-        setIsLoading(false);
-      });
-  }, []);
+  React.useEffect(() => {
+    router.invalidate();
+  }, [user, token, isLoggedIn]);
 
   return (
-    <Switch>
-      <Route
-        exact
-        path='/'
-        render={() =>
-          isLoggedIn ? (
-            <></>
-          ) : (
-            isLoading ? <LoadingPlaceholder /> : <Login authUrl={authUrl} />
-          )
-        }
-      />
-      <Route
-        path='/callback'
-        render={() => 
-          !isLoggedIn ? (
-            <LoginHandler
-              handleLogin={() => setIsLoggedIn(true)}
-              setUser={setUser}
-              setToken={setToken}
-            />
-          ) : (
-            <Redirect to='/createPlaylist' />
-          )
-        }
-      />
-      <Route
-        exact
-        path='/createPlaylist'
-        render={() =>
-          isLoggedIn ? (
-            <CreatePlaylistContainer token={token}/>
-          ) : (
-            <Redirect to='/'/>
-          )
-        }
-      />
-      <Route component={NotFound}/>
-    </Switch>
-  )
+    <RouterProvider
+      router={router}
+      context={routerContext}
+    />
+  );
 };
 
 export default AppRouting;

@@ -1,16 +1,17 @@
 # Setlistify
 Live at [setlistify.app](https://www.setlistify.app)!
 
-A platform for you to prep for concerts - find an artist you're seeing soon, and add their most recently played songs live to a Spotify playlist
+A platform for you to prep for concerts - find an artist you're seeing soon, and add their most recently played songs live to a Spotify playlist.
 
 ### Tech Stack
 
-* **Frontend**: TypeScript, React 16, React Router v5, Semantic UI React (`semantic-ui-react`)
-* **Backend**: Go (Serverless Functions on Vercel), Spotify Web API (`zmb3/spotify/v2`), Setlist.fm API, HS256 JWT auth
-* **Infrastructure & Hosting**: Vercel (monorepo hosting React static build + Go serverless functions in `/api`)
+* **Frontend**: Vite 6, React 19, TanStack Router (code-based), TanStack Query v5, Tailwind CSS v4, Lucide React icons, TypeScript
+* **Backend**: Go (Serverless Functions on Vercel), Typed Handler Pattern, Spotify Web API (`zmb3/spotify/v2`), Setlist.fm API, HS256 JWT auth
+* **Type Safety**: AST type generator (`tygo`) auto-generates frontend TypeScript types (`src/api/*.gen.ts`) directly from backend Go DTOs
+* **Infrastructure & Hosting**: Vercel (monorepo hosting Vite SPA static build + Go serverless functions in `/api`)
 
 ### Current Features
-* Autocomplete for artists
+* Autocomplete for artists with custom accessible combobox
 * Create Playlists based on an artist's previous concert setlist right on your Spotify account!
 * Select artist playlist based on location, date, and concert length
 
@@ -61,75 +62,58 @@ go run ./cmd/devserver
 
 ---
 
-### 2. Frontend (React)
+### 2. Frontend (Vite)
 
-In a separate terminal, start the Create React App development server:
+In a separate terminal, start the Vite development server:
 
 ```bash
 nvm use          # switches to Node 22 per .nvmrc
 yarn install
-yarn start        # runs on http://localhost:3000
+yarn start        # runs on http://127.0.0.1:3000
 ```
 
-> The React dev server automatically proxies `/api/*` requests to `http://localhost:5001` via `"proxy": "http://localhost:5001"` in `package.json`.
+> The Vite dev server automatically proxies `/api/*` requests to `http://localhost:5001` via `vite.config.ts`.
 
 ---
 
 ### 3. Open the App
 
-Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
+Navigate to [http://127.0.0.1:3000](http://127.0.0.1:3000) in your browser.
 
 ---
 
-### Running Tests
+### Auto-Generating TypeScript Types
+
+To sync frontend TypeScript types with Go backend DTOs:
 
 ```bash
-# Run Go backend tests
+yarn gen:types
+```
+
+This reflects over `pkg/apitypes`, `pkg/setlistfm`, and `github.com/zmb3/spotify/v2` structs and emits `src/api/types.gen.ts`. Zero type drift is validated on CI.
+
+---
+
+### Running Tests & Verification
+
+```bash
+# Verify Go tests pass
 go test -v ./...
 
-# Run frontend tests
-yarn test --watchAll=false
+# Verify generated types are in sync
+go run github.com/gzuidhof/tygo generate && git diff --exit-code src/api/*.gen.ts
+
+# Run frontend Vitest unit tests
+yarn test
+
+# Verify TypeScript compilation and production build
+yarn build
 ```
 
 ## Production Deployment
 
 Setlistify is deployed on [Vercel](https://vercel.com). Pushing changes to the `master` branch triggers an automated build and deployment of:
-- The React frontend static assets
+- The Vite frontend static assets (`build/`)
 - The Go serverless API functions in `/api`
 
 ---
-
-## Project Structure
-
-```text
-setlistify/
-├── .github/                  # GitHub Actions CI & Dependabot configuration
-├── api/                      # Go Serverless Function entry points for Vercel
-│   ├── artistSearch.go
-│   ├── artistSetlists.go
-│   ├── authUrl.go
-│   ├── buildPlaylist.go
-│   ├── getUser.go
-│   └── setlistArtists.go
-├── cmd/
-│   └── devserver/            # Local Go development server
-│       └── main.go
-├── pkg/
-│   ├── auth/                 # JWT creation, parsing, and token encryption
-│   ├── httputil/             # CORS and JSON response utilities
-│   ├── setlistfm/            # Setlist.fm client and song normalization
-│   └── spotify/              # Spotify client, auth, and playlist generation
-├── plans/                    # Approved architectural and feature plans
-├── public/                   # Static HTML template, icons, and web manifest
-├── src/                      # React + TypeScript frontend source
-│   ├── components/           # UI & routing components
-│   ├── img/                  # Static image assets
-│   ├── utils/                # Environment helpers (dev_env.ts)
-│   ├── App.tsx               # Root application layout & state
-│   └── index.tsx             # React DOM entry point
-├── vercel.json               # Vercel routing and header configuration
-├── ARCHITECTURE.md           # System design and architectural patterns
-├── go.mod                    # Go module dependencies
-├── package.json              # Frontend dependencies and scripts
-└── tsconfig.json             # TypeScript compiler configuration
-```

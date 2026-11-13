@@ -4,18 +4,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/alexcaulfield/setlistify/pkg/apitypes"
 	"github.com/alexcaulfield/setlistify/pkg/config"
 	"github.com/alexcaulfield/setlistify/pkg/httputil"
 	"github.com/alexcaulfield/setlistify/pkg/setlistfm"
 )
 
-type setlistArtistsRequest struct {
-	ArtistName string `json:"artistName"`
-}
-
-type setlistArtistsResponse struct {
-	Artists []setlistfm.Artist `json:"artists"`
-}
+type setlistArtistsRequest = apitypes.SetlistArtistsRequest
+type setlistArtistsResponse = apitypes.SetlistArtistsResponse
 
 func searchSetlistArtists(ctx context.Context, cfg *config.Config, req setlistArtistsRequest) (setlistArtistsResponse, error) {
 	if req.ArtistName == "" {
