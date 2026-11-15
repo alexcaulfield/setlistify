@@ -11,9 +11,10 @@ export interface HeaderProps {
   userImage?: string;
   setUser?: (user: any) => void;
   setIsLoggedIn?: (loggedIn: boolean) => void;
+  onLogout?: () => void;
 }
 
-const NavBar = ({ name, user, userImage }: HeaderProps) => {
+const NavBar = ({ name, user, userImage, onLogout }: HeaderProps) => {
   const displayName = name ?? user?.display_name ?? user?.id ?? "";
   const userImageUrl = userImage || getSmallestImageUrl(user?.images);
 
@@ -24,18 +25,29 @@ const NavBar = ({ name, user, userImage }: HeaderProps) => {
         aria-label="Setlistify music icon"
       />
       {(displayName || userImageUrl) ? (
-        <div className="flex items-center gap-3">
-          {displayName ? (
-            <span className="text-base font-semibold tracking-tight text-gray-900">
-              {displayName}
-            </span>
-          ) : null}
-          {userImageUrl ? (
-            <img
-              src={userImageUrl}
-              alt={displayName ? `${displayName}'s profile` : "User profile"}
-              className="h-8 w-8 rounded-full object-cover border border-gray-200 shadow-sm"
-            />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {displayName ? (
+              <span className="text-base font-semibold tracking-tight text-gray-900">
+                {displayName}
+              </span>
+            ) : null}
+            {userImageUrl ? (
+              <img
+                src={userImageUrl}
+                alt={displayName ? `${displayName}'s profile` : "User profile"}
+                className="h-8 w-8 rounded-full object-cover border border-gray-200 shadow-sm"
+              />
+            ) : null}
+          </div>
+          {onLogout ? (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="text-sm font-medium text-gray-500 transition hover:text-gray-900 cursor-pointer"
+            >
+              Log out
+            </button>
           ) : null}
         </div>
       ) : null}

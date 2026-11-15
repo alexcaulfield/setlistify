@@ -41,11 +41,12 @@ function IndexPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['authUrl'],
     queryFn: fetchAuthUrl,
+    enabled: !isLoggedIn,
     staleTime: 1000 * 60 * 30,
   });
 
   if (isLoggedIn) {
-    return null;
+    return <Navigate to="/createPlaylist" replace />;
   }
 
   if (isLoading) {
