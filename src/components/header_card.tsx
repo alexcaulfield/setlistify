@@ -3,7 +3,7 @@ import { Music } from 'lucide-react';
 import type { SpotifyImage, SpotifyPrivateUser } from '../api/types.gen';
 
 export interface HeaderProps {
-  name: string;
+  name?: string;
   user?: SpotifyPrivateUser | null;
   userImage?: string;
   setUser?: (user: any) => void;
