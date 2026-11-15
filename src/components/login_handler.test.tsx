@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { test, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginHandler from './login_handler';
 import * as api from '../api/setlistify';
@@ -24,12 +24,11 @@ describe('LoginHandler', () => {
     vi.clearAllMocks();
   });
 
-  test('calls setToken, setUser, handleLogin and navigates to /createPlaylist on success', async () => {
+  it('calls setToken, setUser, handleLogin and navigates to /createPlaylist on success', async () => {
     const handleLogin = vi.fn();
     const setUser = vi.fn();
     const setToken = vi.fn();
 
-    // Set code in window.location.search
     delete (window as any).location;
     (window as any).location = new URL('http://127.0.0.1:3000/callback?code=test-code');
 
@@ -39,7 +38,7 @@ describe('LoginHandler', () => {
         display_name: 'Alex',
         id: 'alex123',
         images: [],
-        followers: { total: 0, href: null },
+        followers: { total: 0, href: '' },
         external_urls: { spotify: '' },
         href: '',
         uri: '',
@@ -61,6 +60,28 @@ describe('LoginHandler', () => {
       expect(setToken).toHaveBeenCalledWith('jwt-token-123');
       expect(handleLogin).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/createPlaylist', replace: true });
+    });
+  });
+
+  it('renders authentication error message when exchangeCodeForUser fails', async () => {
+    delete (window as any).location;
+    (window as any).location = new URL('http://127.0.0.1:3000/callback?code=invalid-code');
+
+    vi.mocked(api.exchangeCodeForUser).mockRejectedValueOnce(new Error('Invalid token'));
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <LoginHandler
+          handleLogin={vi.fn()}
+          setUser={vi.fn()}
+          setToken={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Authentication Failed')).toBeInTheDocument();
+      expect(screen.getByText(/Invalid token/)).toBeInTheDocument();
     });
   });
 });
