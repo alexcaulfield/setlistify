@@ -12,7 +12,7 @@ import NotFound from './not_found';
 import Login from './login';
 import LoadingPlaceholder from './loading_placeholder';
 import LoginHandler from './login_handler';
-import CreatePlaylistContainer from './create_playlist_container';
+import CreatePlaylistContainer from './create-playlist-container';
 import { fetchAuthUrl } from '../api/setlistify';
 import type { SpotifyPrivateUser } from '../api/types.gen';
 
