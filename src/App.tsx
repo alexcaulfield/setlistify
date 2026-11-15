@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppRouting from './components/app_routing';
-import NavBar, { getSmallestImageUrl } from './components/nav-bar';
+import NavBar from './components/nav-bar';
+import { getSmallestImageUrl } from './utils/image-utils';
 import Footer from './components/footer';
 import type { SpotifyPrivateUser } from './api/types.gen';
 
