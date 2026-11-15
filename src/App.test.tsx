@@ -35,6 +35,7 @@ describe('App', () => {
     });
   });
 
+  // 1. Initial Unauthenticated Path: landing route shows login CTA
   it('renders login page on initial unauthenticated visit', async () => {
     render(<App />);
     await waitFor(() => {
@@ -42,6 +43,7 @@ describe('App', () => {
     });
   });
 
+  // 2. Golden Path: OAuth callback exchanges code and navigates to main app view
   it('handles callback and navigates to createPlaylist', async () => {
     render(<App />);
     await router.navigate({ to: '/callback', search: { code: 'valid-code' } });

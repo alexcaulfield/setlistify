@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import NavBar, { getSmallestImageUrl } from './header_card';
+import NavBar, { getSmallestImageUrl } from './nav-bar';
 import type { SpotifyPrivateUser } from '../api/types.gen';
 
 describe('getSmallestImageUrl', () => {
@@ -43,24 +43,26 @@ describe('NavBar', () => {
     ],
   };
 
-  it('renders user display name and top-right avatar when user with images is provided', () => {
+  it('renders music icon on the left, and user display name with avatar on the right when user with images is provided', () => {
     render(<NavBar user={mockUser} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Alex C' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Setlistify music icon')).toBeInTheDocument();
+    expect(screen.getByText('Alex C')).toBeInTheDocument();
     const avatar = screen.getByRole('img', { name: "Alex C's profile" });
     expect(avatar).toHaveAttribute('src', 'https://example.com/small.jpg');
     expect(avatar).toHaveClass('rounded-full');
   });
 
-  it('renders default music icon and no avatar when unauthenticated', () => {
+  it('renders music icon and no user profile details when unauthenticated', () => {
     render(<NavBar name="" />);
     expect(screen.getByLabelText('Setlistify music icon')).toBeInTheDocument();
-    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.queryByText('Alex C')).not.toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /profile/i })).not.toBeInTheDocument();
   });
 
-  it('renders heading without avatar when user has no images', () => {
+  it('renders music icon and display name without avatar when user has no images', () => {
     render(<NavBar user={{ ...mockUser, images: [] }} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Alex C' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Setlistify music icon')).toBeInTheDocument();
+    expect(screen.getByText('Alex C')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /profile/i })).not.toBeInTheDocument();
   });
 });
