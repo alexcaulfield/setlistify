@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppRouting from './components/app_routing';
-import HeaderCard from './components/header_card';
+import NavBar, { getSmallestImageUrl } from './components/header_card';
 import Footer from './components/footer';
 import type { SpotifyPrivateUser } from './api/types.gen';
 
@@ -20,13 +20,16 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   const displayName = user?.display_name || user?.id || '';
+  const userImage = getSmallestImageUrl(user?.images);
 
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
-        <main className="flex-1 py-8">
-          <HeaderCard
+        <main className="flex-1 pb-8">
+          <NavBar
             name={displayName}
+            user={user}
+            userImage={userImage}
             setUser={setUser}
             setIsLoggedIn={setIsLoggedIn}
           />
