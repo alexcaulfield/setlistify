@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import SearchContainer from './search_container';
 import ArtistCard from './artist_card';
-import PlaylistBuilderButtons from './playlist_builder_buttons';
+import PlaylistBuilderButtons from './playlist-builder-buttons';
 import { buildPlaylist } from '../api/setlistify';
 import type { SpotifyFullArtist } from '../api/types.gen';
 import { SpotifyIcon } from './spotify_icon';
@@ -38,11 +38,11 @@ const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
     },
   });
 
-  const handleCreatePlaylist = (playlistType: string) => () => {
+  const handleCreatePlaylist = () => {
     buildMutation.mutate({
       artistName: selectedArtist.name,
       artistId: selectedArtist.id,
-      playlistType: playlistType,
+      playlistType: 'Setlist',
       token: token,
       playlistId: concertId,
       artistMbid: artistMbid,
@@ -62,13 +62,8 @@ const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
       <PlaylistBuilderButtons
         artistSelected={Boolean(selectedArtist.name && concertId)}
         onCreatePlaylist={handleCreatePlaylist}
+        isLoading={buildMutation.isPending}
       />
-
-      {buildMutation.isPending && (
-        <p className="mt-4 text-center text-sm font-medium text-gray-500">
-          Building your playlist...
-        </p>
-      )}
 
       {buildMutation.isError && (
         <p className="mt-4 text-center text-sm font-medium text-red-600">
