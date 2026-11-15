@@ -24,7 +24,6 @@ describe('LoginHandler', () => {
     vi.clearAllMocks();
   });
 
-  // 1. Golden Path: valid auth code exchanges token/user and navigates to main view
   it('calls setToken, setUser, handleLogin and navigates to /createPlaylist on success', async () => {
     const handleLogin = vi.fn();
     const setUser = vi.fn();
@@ -64,7 +63,6 @@ describe('LoginHandler', () => {
     });
   });
 
-  // 2. Failure Path: failed exchange renders authentication error banner
   it('renders authentication error message when exchangeCodeForUser fails', async () => {
     delete (window as any).location;
     (window as any).location = new URL('http://127.0.0.1:3000/callback?code=invalid-code');

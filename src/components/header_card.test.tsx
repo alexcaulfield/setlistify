@@ -5,7 +5,6 @@ import NavBar, { getSmallestImageUrl } from './header_card';
 import type { SpotifyPrivateUser } from '../api/types.gen';
 
 describe('getSmallestImageUrl', () => {
-  // 1. Golden Path: valid inputs return expected output (smallest by dimensions)
   it('returns the URL of the smallest image by dimensions', () => {
     const images = [
       { url: 'https://example.com/large.jpg', width: 300, height: 300 },
@@ -14,13 +13,11 @@ describe('getSmallestImageUrl', () => {
     expect(getSmallestImageUrl(images)).toBe('https://example.com/small.jpg');
   });
 
-  // 2. Failure Path: missing or empty collection returns undefined
   it('returns undefined when image collection is empty or undefined', () => {
     expect(getSmallestImageUrl([])).toBeUndefined();
     expect(getSmallestImageUrl(undefined)).toBeUndefined();
   });
 
-  // 3. Edge Case: single image or images with missing dimensions falls back gracefully
   it('falls back to the available image URL when dimensions are missing or single image provided', () => {
     expect(getSmallestImageUrl([{ url: 'https://example.com/single.jpg', width: 0, height: 0 }])).toBe(
       'https://example.com/single.jpg'
@@ -46,7 +43,6 @@ describe('NavBar', () => {
     ],
   };
 
-  // 1. Golden Path: authenticated user with images displays name and avatar
   it('renders user display name and top-right avatar when user with images is provided', () => {
     render(<NavBar user={mockUser} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Alex C' })).toBeInTheDocument();
@@ -55,7 +51,6 @@ describe('NavBar', () => {
     expect(avatar).toHaveClass('rounded-full');
   });
 
-  // 2. Failure / Unauthenticated Path: unauthenticated user displays default icon without avatar
   it('renders default music icon and no avatar when unauthenticated', () => {
     render(<NavBar name="" />);
     expect(screen.getByLabelText('Setlistify music icon')).toBeInTheDocument();
@@ -63,7 +58,6 @@ describe('NavBar', () => {
     expect(screen.queryByRole('img', { name: /profile/i })).not.toBeInTheDocument();
   });
 
-  // 3. Edge Case: authenticated user with empty images array renders name without avatar
   it('renders heading without avatar when user has no images', () => {
     render(<NavBar user={{ ...mockUser, images: [] }} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Alex C' })).toBeInTheDocument();
