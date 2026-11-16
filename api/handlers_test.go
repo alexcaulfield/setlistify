@@ -105,3 +105,51 @@ func TestBuildPlaylistInvalidToken(t *testing.T) {
 	}
 }
 
+func TestFormatPlaylistTitle(t *testing.T) {
+	tests := []struct {
+		name          string
+		artistName    string
+		formattedDate string
+		fallbackDate  string
+		want          string
+	}{
+		{
+			name:          "prefers formatted date from client",
+			artistName:    "Radiohead",
+			formattedDate: "Nov 15, 2026",
+			fallbackDate:  "15-11-2026",
+			want:          "Radiohead's Setlist from Nov 15, 2026",
+		},
+		{
+			name:          "falls back to eventDate when formattedDate is empty",
+			artistName:    "Radiohead",
+			formattedDate: "",
+			fallbackDate:  "15-11-2026",
+			want:          "Radiohead's Setlist from 15-11-2026",
+		},
+		{
+			name:          "falls back to eventDate when formattedDate is whitespace",
+			artistName:    "Radiohead",
+			formattedDate: "   ",
+			fallbackDate:  "15-11-2026",
+			want:          "Radiohead's Setlist from 15-11-2026",
+		},
+		{
+			name:          "omits date when both are empty",
+			artistName:    "Radiohead",
+			formattedDate: "",
+			fallbackDate:  "",
+			want:          "Radiohead's Setlist",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatPlaylistTitle(tt.artistName, tt.formattedDate, tt.fallbackDate)
+			if got != tt.want {
+				t.Errorf("formatPlaylistTitle(%q, %q, %q) = %q, want %q", tt.artistName, tt.formattedDate, tt.fallbackDate, got, tt.want)
+			}
+		})
+	}
+}
+

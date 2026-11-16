@@ -17,6 +17,17 @@ import (
 type buildPlaylistRequest = apitypes.BuildPlaylistRequest
 type buildPlaylistResponse = apitypes.BuildPlaylistResponse
 
+func formatPlaylistTitle(artistName, formattedDate, fallbackDate string) string {
+	dateStr := strings.TrimSpace(formattedDate)
+	if dateStr == "" {
+		dateStr = fallbackDate
+	}
+	if dateStr != "" {
+		return fmt.Sprintf("%s's Setlist from %s", artistName, dateStr)
+	}
+	return fmt.Sprintf("%s's Setlist", artistName)
+}
+
 func buildPlaylist(ctx context.Context, cfg *config.Config, req buildPlaylistRequest) (buildPlaylistResponse, error) {
 	oauthToken, err := auth.DecodeToken(req.Token, cfg.AppSecretKey)
 	if err != nil {
@@ -34,9 +45,7 @@ func buildPlaylist(ctx context.Context, cfg *config.Config, req buildPlaylistReq
 		setlist, err := setlistCli.GetSetlist(ctx, req.PlaylistID)
 		if err == nil && setlist != nil {
 			songs = setlistfm.ExtractSongs(setlist)
-			if setlist.EventDate != "" {
-				playlistTitle = fmt.Sprintf("%s's Setlist from %s", req.ArtistName, setlist.EventDate)
-			}
+			playlistTitle = formatPlaylistTitle(req.ArtistName, req.FormattedDate, setlist.EventDate)
 		} else {
 			// Fallback: search via MBID or artistName
 			var candidateSetlists []setlistfm.Setlist
@@ -54,9 +63,7 @@ func buildPlaylist(ctx context.Context, cfg *config.Config, req buildPlaylistReq
 			picked := setlistfm.PickSetlistByID(candidateSetlists, req.PlaylistID)
 			if picked != nil {
 				songs = setlistfm.ExtractSongs(picked)
-				if picked.EventDate != "" {
-					playlistTitle = fmt.Sprintf("%s's Setlist from %s", req.ArtistName, picked.EventDate)
-				}
+				playlistTitle = formatPlaylistTitle(req.ArtistName, req.FormattedDate, picked.EventDate)
 			}
 		}
 	}

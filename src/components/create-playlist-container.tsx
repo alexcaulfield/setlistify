@@ -27,6 +27,7 @@ const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
   const [selectedArtist, setSelectedArtist] = useState<SpotifyFullArtist>(emptyArtist);
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [concertId, setConcertId] = useState('');
+  const [concertDate, setConcertDate] = useState('');
   const [artistMbid, setArtistMbid] = useState('');
 
   const buildMutation = useMutation({
@@ -46,6 +47,7 @@ const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
       token: token,
       playlistId: concertId,
       artistMbid: artistMbid,
+      formattedDate: concertDate,
     });
   };
 
@@ -56,6 +58,7 @@ const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
         setPlaylistUrl={setPlaylistUrl}
         token={token}
         setConcertId={setConcertId}
+        setConcertDate={setConcertDate}
         setArtistMbid={setArtistMbid}
       />
 
