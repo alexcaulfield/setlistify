@@ -154,6 +154,8 @@ const SearchContainer = ({
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
+            // clear out playlist URL since we're changing the one we're selecting
+            setPlaylistUrl('');
             setIsDropdownOpen(true);
           }}
           onFocus={() => {
@@ -228,6 +230,8 @@ const SearchContainer = ({
             id="concert-select"
             defaultValue=""
             onChange={(e) => {
+              // clear out playlist URL since we're changing the one we're selecting
+              setPlaylistUrl('');
               const selectedId = e.target.value;
               setConcertId(selectedId);
               const selectedOption = setlists.find((s) => s.value === selectedId);
