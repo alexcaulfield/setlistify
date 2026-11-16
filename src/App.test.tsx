@@ -89,10 +89,15 @@ describe('App', () => {
     await router.navigate({ to: '/createPlaylist' });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: /log out/i }));
+    // Open the dropdown
+    await user.click(screen.getByRole('button', { name: /account menu/i }));
+
+    // Click the Log out item inside the dropdown
+    const logoutBtn = await screen.findByRole('button', { name: /log out/i });
+    await user.click(logoutBtn);
 
     await waitFor(() => {
       expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull();
