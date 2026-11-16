@@ -44,4 +44,17 @@ describe('NavBar', () => {
     expect(screen.getByText('Alex C')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /profile/i })).not.toBeInTheDocument();
   });
+
+  it('renders account menu trigger and calls onLogout when Log out is clicked', () => {
+    const onLogout = vi.fn();
+    render(<NavBar user={mockUser} onLogout={onLogout} />);
+
+    const trigger = screen.getByRole('button', { name: /account menu/i });
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveTextContent('Alex C');
+
+    const logoutButton = screen.getByRole('button', { name: /log out/i });
+    logoutButton.click();
+    expect(onLogout).toHaveBeenCalledTimes(1);
+  });
 });

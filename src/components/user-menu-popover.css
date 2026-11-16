@@ -1,0 +1,51 @@
+.user-menu-popover {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  min-width: 10rem;
+  padding: 0;
+  margin: 0;
+}
+
+/* Anchor positioning: below and right-aligned to trigger */
+@supports (position-area: block-end) {
+  .user-menu-popover {
+    position-area: block-end span-inline-start;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    inset: auto;
+    margin: 0.5rem 0 0 0;
+  }
+}
+
+/* Fallback positioning when CSS Anchor Positioning isn't supported */
+@supports not (position-area: block-end) {
+  .user-menu-popover {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    top: var(--popover-top, 0px);
+    right: var(--popover-right, 0px);
+  }
+}
+
+/* Open/close animation */
+@media (prefers-reduced-motion: no-preference) {
+  .user-menu-popover {
+    opacity: 0;
+    translate: 0 -0.25rem;
+    transition: opacity 0.15s, translate 0.15s, display 0.15s, overlay 0.15s;
+    transition-behavior: allow-discrete;
+  }
+  .user-menu-popover:is(:popover-open, .\:popover-open) {
+    opacity: 1;
+    translate: 0 0;
+    transition-duration: 0.1s;
+  }
+  @starting-style {
+    .user-menu-popover:is(:popover-open, .\:popover-open) {
+      opacity: 0;
+      translate: 0 -0.25rem;
+    }
+  }
+}
