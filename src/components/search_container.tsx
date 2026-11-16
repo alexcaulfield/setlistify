@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Search, X, Loader2 } from "lucide-react";
-import { searchArtists, fetchArtistSetlists } from "../api/setlistify";
-import type { SpotifyFullArtist, Setlist } from "../api/types.gen";
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, X, Loader2 } from 'lucide-react';
+import { searchArtists, fetchArtistSetlists } from '../api/setlistify';
+import type { SpotifyFullArtist, Setlist } from '../api/types.gen';
 
 interface FormattedSetlistOption {
   text: string;
@@ -25,27 +25,25 @@ function formatSetlists(artistSetlists: Setlist[]): FormattedSetlistOption[] {
     const sets = setlist?.sets?.set;
     const setsArray = Array.isArray(sets) ? sets : [];
     if (setsArray.length > 0) {
-      const dateSplit = (setlist?.eventDate || "").split("-");
+      const dateSplit = (setlist?.eventDate || '').split('-');
       const totalSongs = setsArray.reduce(
         (count, s) => count + (Array.isArray(s?.song) ? s.song.length : 0),
-        0,
+        0
       );
       if (totalSongs > 0) {
-        const venueCity = setlist?.venue?.city?.name || "Unknown City";
-        const venueCountry = setlist?.venue?.city?.country?.name || "";
-        const location = venueCountry
-          ? `${venueCity}, ${venueCountry}`
-          : venueCity;
+        const venueCity = setlist?.venue?.city?.name || 'Unknown City';
+        const venueCountry = setlist?.venue?.city?.country?.name || '';
+        const location = venueCountry ? `${venueCity}, ${venueCountry}` : venueCity;
 
-        let formattedDate = setlist?.eventDate || "";
+        let formattedDate = setlist?.eventDate || '';
         if (dateSplit.length === 3) {
           const [day, month, year] = dateSplit.map(Number);
           const dateObj = new Date(year, month - 1, day);
           if (!isNaN(dateObj.getTime())) {
             formattedDate = dateObj.toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
             });
           }
         }
@@ -69,9 +67,9 @@ const SearchContainer = ({
   setConcertDate,
   setArtistMbid,
 }: SearchContainerProps) => {
-  const [inputValue, setInputValue] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedArtistName, setSelectedArtistName] = useState("");
+  const [inputValue, setInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedArtistName, setSelectedArtistName] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -85,7 +83,7 @@ const SearchContainer = ({
 
   // Query artists
   const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ["artistSearch", searchQuery, token],
+    queryKey: ['artistSearch', searchQuery, token],
     queryFn: () => searchArtists({ query: searchQuery, limit: 5, token }),
     enabled: Boolean(searchQuery && token),
     staleTime: 1000 * 60 * 5,
@@ -93,9 +91,8 @@ const SearchContainer = ({
 
   // Query setlists for selected artist
   const { data: setlistsData, isLoading: isLoadingSetlists } = useQuery({
-    queryKey: ["artistSetlists", selectedArtistName],
-    queryFn: () =>
-      fetchArtistSetlists({ artistName: selectedArtistName, artistMbid: "" }),
+    queryKey: ['artistSetlists', selectedArtistName],
+    queryFn: () => fetchArtistSetlists({ artistName: selectedArtistName, artistMbid: '' }),
     enabled: Boolean(selectedArtistName),
     staleTime: 1000 * 60 * 10,
   });
@@ -116,21 +113,21 @@ const SearchContainer = ({
     setSelectedArtist(artist);
     setInputValue(artist.name);
     setSelectedArtistName(artist.name);
-    setPlaylistUrl("");
-    setConcertId("");
-    setConcertDate("");
-    setArtistMbid("");
+    setPlaylistUrl('');
+    setConcertId('');
+    setConcertDate('');
+    setArtistMbid('');
     setIsDropdownOpen(false);
   };
 
   const handleClear = () => {
-    setInputValue("");
-    setSearchQuery("");
-    setSelectedArtistName("");
-    setPlaylistUrl("");
-    setConcertId("");
-    setConcertDate("");
-    setArtistMbid("");
+    setInputValue('');
+    setSearchQuery('');
+    setSelectedArtistName('');
+    setPlaylistUrl('');
+    setConcertId('');
+    setConcertDate('');
+    setArtistMbid('');
     setIsDropdownOpen(false);
   };
 
@@ -158,7 +155,7 @@ const SearchContainer = ({
           onChange={(e) => {
             setInputValue(e.target.value);
             // clear out playlist URL since we're changing the one we're selecting
-            setPlaylistUrl("");
+            setPlaylistUrl('');
             setIsDropdownOpen(true);
           }}
           onFocus={() => {
@@ -234,13 +231,11 @@ const SearchContainer = ({
             defaultValue=""
             onChange={(e) => {
               // clear out playlist URL since we're changing the one we're selecting
-              setPlaylistUrl("");
+              setPlaylistUrl('');
               const selectedId = e.target.value;
               setConcertId(selectedId);
-              const selectedOption = setlists.find(
-                (s) => s.value === selectedId,
-              );
-              setConcertDate(selectedOption?.formattedDate ?? "");
+              const selectedOption = setlists.find((s) => s.value === selectedId);
+              setConcertDate(selectedOption?.formattedDate ?? '');
             }}
             className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm shadow-sm transition hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           >
