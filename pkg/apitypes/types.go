@@ -59,12 +59,13 @@ type ArtistSetlistsResponse struct {
 
 // BuildPlaylistRequest is the request body for POST /api/buildPlaylist
 type BuildPlaylistRequest struct {
-	Token        string `json:"token"`
-	ArtistName   string `json:"artistName"`
-	ArtistID     string `json:"artistId,omitempty"`
-	ArtistMBID   string `json:"artistMbid,omitempty"`
-	PlaylistType string `json:"playlistType"`
-	PlaylistID   string `json:"playlistId"`
+	Token         string `json:"token"`
+	ArtistName    string `json:"artistName"`
+	ArtistID      string `json:"artistId,omitempty"`
+	ArtistMBID    string `json:"artistMbid,omitempty"`
+	PlaylistType  string `json:"playlistType"`
+	PlaylistID    string `json:"playlistId"`
+	FormattedDate string `json:"formattedDate,omitempty"`
 }
 
 // BuildPlaylistResponse is the response body for POST /api/buildPlaylist

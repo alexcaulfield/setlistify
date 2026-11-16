@@ -135,6 +135,7 @@ export interface BuildPlaylistRequest {
   artistMbid?: string;
   playlistType: string;
   playlistId: string;
+  formattedDate?: string;
 }
 /**
  * BuildPlaylistResponse is the response body for POST /api/buildPlaylist

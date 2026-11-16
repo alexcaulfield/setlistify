@@ -7,6 +7,7 @@ import type { SpotifyFullArtist, Setlist } from '../api/types.gen';
 interface FormattedSetlistOption {
   text: string;
   value: string;
+  formattedDate: string;
 }
 
 interface SearchContainerProps {
@@ -14,6 +15,7 @@ interface SearchContainerProps {
   setPlaylistUrl: (url: string) => void;
   token: string;
   setConcertId: (id: string) => void;
+  setConcertDate: (date: string) => void;
   setArtistMbid: (mbid: string) => void;
 }
 
@@ -49,6 +51,7 @@ function formatSetlists(artistSetlists: Setlist[]): FormattedSetlistOption[] {
         acc.push({
           text: `${formattedDate} - ${location} - ${totalSongs} Songs`,
           value: setlist.id,
+          formattedDate,
         });
       }
     }
@@ -61,6 +64,7 @@ const SearchContainer = ({
   setPlaylistUrl,
   token,
   setConcertId,
+  setConcertDate,
   setArtistMbid,
 }: SearchContainerProps) => {
   const [inputValue, setInputValue] = useState('');
@@ -111,6 +115,7 @@ const SearchContainer = ({
     setSelectedArtistName(artist.name);
     setPlaylistUrl('');
     setConcertId('');
+    setConcertDate('');
     setArtistMbid('');
     setIsDropdownOpen(false);
   };
@@ -121,6 +126,7 @@ const SearchContainer = ({
     setSelectedArtistName('');
     setPlaylistUrl('');
     setConcertId('');
+    setConcertDate('');
     setArtistMbid('');
     setIsDropdownOpen(false);
   };
@@ -221,7 +227,12 @@ const SearchContainer = ({
           <select
             id="concert-select"
             defaultValue=""
-            onChange={(e) => setConcertId(e.target.value)}
+            onChange={(e) => {
+              const selectedId = e.target.value;
+              setConcertId(selectedId);
+              const selectedOption = setlists.find((s) => s.value === selectedId);
+              setConcertDate(selectedOption?.formattedDate ?? '');
+            }}
             className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm shadow-sm transition hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           >
             <option value="" disabled>
