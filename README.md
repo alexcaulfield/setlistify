@@ -112,7 +112,7 @@ yarn build
 
 ## Production Deployment
 
-Setlistify is deployed on [Vercel](https://vercel.com). Pushing changes to the `master` branch triggers an automated build and deployment of:
+Setlistify is deployed on [Vercel](https://vercel.com). Pushing changes to the `main` branch triggers an automated build and deployment of:
 - The Vite frontend static assets (`build/`)
 - The Go serverless API functions in `/api`
 
