@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+@custom-variant dark {
+  &:where(:root:has(> head > meta[name="color-scheme"][content="dark"]), :root:has(> head > meta[name="color-scheme"][content="dark"]) *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not(:has(> head > meta[name="color-scheme"][content="light"])), :root:not(:has(> head > meta[name="color-scheme"][content="light"])) *) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  color-scheme: light dark;
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

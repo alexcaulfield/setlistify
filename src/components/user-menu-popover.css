@@ -1,11 +1,36 @@
 .user-menu-popover {
-  border: 1px solid #e5e7eb;
+  --popover-bg: #ffffff;
+  --popover-border: #e5e7eb;
+  --popover-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+  border: 1px solid var(--popover-border);
   border-radius: 0.5rem;
-  background: white;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  min-width: 10rem;
+  background: var(--popover-bg);
+  box-shadow: var(--popover-shadow);
+  min-width: 12rem;
   padding: 0;
   margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])) .user-menu-popover {
+    --popover-bg: #171717;
+    --popover-border: #262626;
+    --popover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  }
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) .user-menu-popover {
+  --popover-bg: #171717;
+  --popover-border: #262626;
+  --popover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+}
+
+@supports (color: light-dark(white, black)) {
+  .user-menu-popover {
+    --popover-bg: light-dark(#ffffff, #171717);
+    --popover-border: light-dark(#e5e7eb, #262626);
+  }
 }
 
 /* Anchor positioning: below and right-aligned to trigger */

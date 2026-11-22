@@ -7,3 +7,20 @@ if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') {
     writable: true,
   });
 }
+
+// jsdom does not implement window.matchMedia; provide a safe default stub
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}

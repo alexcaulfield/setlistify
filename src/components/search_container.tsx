@@ -139,9 +139,9 @@ const SearchContainer = ({
         </label>
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           {isSearching ? (
-            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+            <Loader2 className="h-4 w-4 animate-spin text-gray-400 dark:text-neutral-500" />
           ) : (
-            <Search className="h-4 w-4 text-gray-400" />
+            <Search className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
           )}
         </div>
         <input
@@ -168,13 +168,13 @@ const SearchContainer = ({
             setTimeout(() => setIsDropdownOpen(false), 200);
           }}
           placeholder="Search for an Artist"
-          className="w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-10 text-sm shadow-sm transition hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          className="w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-10 text-sm shadow-sm transition hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:hover:border-neutral-600 dark:focus:border-emerald-400"
         />
         {inputValue && (
           <button
             type="button"
             onClick={handleClear}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
             aria-label="Clear artist search"
           >
             <X className="h-4 w-4" />
@@ -185,7 +185,7 @@ const SearchContainer = ({
           <ul
             id="artist-search-results"
             role="listbox"
-            className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg ring-1 ring-black/5"
+            className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-900 dark:ring-white/10"
           >
             {artists.map((artist) => (
               <li
@@ -196,7 +196,7 @@ const SearchContainer = ({
                   e.preventDefault(); // Prevents input blur before click registers
                   handleSelectArtist(artist);
                 }}
-                className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm text-gray-800 transition hover:bg-emerald-50 hover:text-emerald-900"
+                className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm text-gray-800 transition hover:bg-emerald-50 hover:text-emerald-900 dark:text-neutral-200 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300"
               >
                 {artist.images?.[0]?.url ? (
                   <img
@@ -205,7 +205,7 @@ const SearchContainer = ({
                     className="h-7 w-7 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="h-7 w-7 rounded-full bg-gray-200" />
+                  <div className="h-7 w-7 rounded-full bg-gray-200 dark:bg-neutral-700" />
                 )}
                 <span className="font-medium">{artist.name}</span>
               </li>
@@ -215,7 +215,7 @@ const SearchContainer = ({
       </div>
 
       {isLoadingSetlists && (
-        <div className="flex items-center justify-center gap-2 py-2 text-sm text-gray-500">
+        <div className="flex items-center justify-center gap-2 py-2 text-sm text-gray-500 dark:text-neutral-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Fetching concerts from Setlist.fm...</span>
         </div>
@@ -237,7 +237,7 @@ const SearchContainer = ({
               const selectedOption = setlists.find((s) => s.value === selectedId);
               setConcertDate(selectedOption?.formattedDate ?? '');
             }}
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm shadow-sm transition hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm shadow-sm transition hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-600 dark:focus:border-emerald-400"
           >
             <option value="" disabled>
               Pick a concert to Setlistify

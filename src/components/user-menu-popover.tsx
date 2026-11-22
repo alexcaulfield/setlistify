@@ -1,4 +1,6 @@
 import React, { useId, useEffect, useRef } from "react";
+import { Moon } from "lucide-react";
+import { useTheme } from "../utils/theme";
 import "./user-menu-popover.css";
 
 export interface UserMenuPopoverProps {
@@ -6,10 +8,19 @@ export interface UserMenuPopoverProps {
   onLogout?: () => void;
 }
 
+const THEME_SWITCH_CLASS = [
+  "relative inline-flex h-5 w-9 shrink-0 cursor-pointer appearance-none items-center rounded-full",
+  "bg-gray-300 checked:bg-emerald-600 dark:bg-neutral-700 dark:checked:bg-emerald-500",
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:focus-visible:outline-emerald-400",
+  "before:absolute before:left-0.5 before:h-4 before:w-4 before:rounded-full before:bg-white before:shadow-xs before:content-[''] dark:before:bg-neutral-50",
+  "checked:before:translate-x-4 motion-safe:transition-colors motion-safe:before:transition-transform",
+].join(" ");
+
 const UserMenuPopover = ({ children, onLogout }: UserMenuPopoverProps) => {
   const popoverId = useId().replace(/:/g, "-") + "user-menu";
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const { isDark, toggleTheme } = useTheme();
 
   // Supply trigger coordinates via CSS variables when anchor positioning isn't supported
   useEffect(() => {
@@ -44,7 +55,7 @@ const UserMenuPopover = ({ children, onLogout }: UserMenuPopoverProps) => {
         id={`${popoverId}-trigger`}
         {...({ popoverTarget: popoverId } as any)}
         aria-label="Account menu"
-        className="flex items-center gap-3 rounded-full cursor-pointer hover:opacity-80 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        className="flex items-center gap-3 rounded-full cursor-pointer hover:opacity-80 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:focus-visible:outline-emerald-400"
       >
         {children}
       </button>
@@ -56,13 +67,28 @@ const UserMenuPopover = ({ children, onLogout }: UserMenuPopoverProps) => {
         className="user-menu-popover"
       >
         <div className="py-1">
+          <label className="flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer select-none">
+            <span className="flex items-center gap-2">
+              <Moon className="h-4 w-4 text-gray-500 dark:text-neutral-400" aria-hidden="true" />
+              <span>Dark mode</span>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              aria-label="Dark mode"
+              checked={isDark}
+              onChange={toggleTheme}
+              className={THEME_SWITCH_CLASS}
+            />
+          </label>
+          <div className="my-1 border-t border-gray-100 dark:border-neutral-800" />
           <button
             type="button"
             onClick={() => {
               (popoverRef.current as any)?.hidePopover?.();
               onLogout?.();
             }}
-            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-neutral-200 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
           >
             Log out
           </button>
