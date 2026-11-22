@@ -1,11 +1,102 @@
 .user-menu-popover {
-  border: 1px solid #e5e7eb;
+  --popover-bg: #ffffff;
+  --popover-border: #e5e7eb;
+  --popover-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --switch-track: #d1d5db;
+  --switch-track-active: #059669;
+  --switch-thumb: #ffffff;
+  --switch-focus: #059669;
+
+  border: 1px solid var(--popover-border);
   border-radius: 0.5rem;
-  background: white;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  min-width: 10rem;
+  background: var(--popover-bg);
+  box-shadow: var(--popover-shadow);
+  min-width: 12rem;
   padding: 0;
   margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])) .user-menu-popover {
+    --popover-bg: #171717;
+    --popover-border: #262626;
+    --popover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --switch-track: #404040;
+    --switch-track-active: #10b981;
+    --switch-thumb: #fafafa;
+    --switch-focus: #34d399;
+  }
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) .user-menu-popover {
+  --popover-bg: #171717;
+  --popover-border: #262626;
+  --popover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --switch-track: #404040;
+  --switch-track-active: #10b981;
+  --switch-thumb: #fafafa;
+  --switch-focus: #34d399;
+}
+
+@supports (color: light-dark(white, black)) {
+  .user-menu-popover {
+    --popover-bg: light-dark(#ffffff, #171717);
+    --popover-border: light-dark(#e5e7eb, #262626);
+    --switch-track: light-dark(#d1d5db, #404040);
+    --switch-track-active: light-dark(#059669, #10b981);
+    --switch-thumb: light-dark(#ffffff, #fafafa);
+    --switch-focus: light-dark(#059669, #34d399);
+  }
+}
+
+/* Accessible zero-dependency switch control */
+.theme-switch {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 1.25rem;
+  margin: 0;
+  border: 0;
+  border-radius: 9999px;
+  background-color: var(--switch-track);
+  cursor: pointer;
+}
+
+.theme-switch::before {
+  content: "";
+  position: absolute;
+  left: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background-color: var(--switch-thumb);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+.theme-switch:checked {
+  background-color: var(--switch-track-active);
+}
+
+.theme-switch:checked::before {
+  transform: translateX(1rem);
+}
+
+.theme-switch:focus-visible {
+  outline: 2px solid var(--switch-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .theme-switch {
+    transition: background-color 0.15s ease;
+  }
+
+  .theme-switch::before {
+    transition: transform 0.15s ease;
+  }
 }
 
 /* Anchor positioning: below and right-aligned to trigger */

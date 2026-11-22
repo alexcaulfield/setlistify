@@ -9,7 +9,7 @@ const NotFound = () => (
       message={
         <span>
           We're sorry, but this page does not exist. Please visit our{' '}
-          <Link to="/" className="font-semibold underline hover:text-red-900">
+          <Link to="/" className="font-semibold underline hover:text-red-900 dark:hover:text-red-100">
             homepage
           </Link>
           !

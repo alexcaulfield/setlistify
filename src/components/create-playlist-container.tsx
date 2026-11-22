@@ -69,7 +69,7 @@ const CreatePlaylistContainer = ({ token }: CreatePlaylistContainerProps) => {
       />
 
       {buildMutation.isError && (
-        <p className="mt-4 text-center text-sm font-medium text-red-600">
+        <p className="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-400">
           Error creating playlist. Please try again.
         </p>
       )}

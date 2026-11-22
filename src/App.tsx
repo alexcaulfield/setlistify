@@ -47,7 +47,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
+      <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-neutral-950 dark:text-neutral-100">
         <main className="flex-1 pb-8">
           <NavBar
             name={displayName}
